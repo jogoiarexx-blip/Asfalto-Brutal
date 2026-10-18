@@ -1,5 +1,6 @@
 import {clamp,curveAt,ROAD_HALF} from './config.js';
 import {worldSteer} from './collision.js';
+import {evolveTraction} from './traction.js';
 export const ROAD_RAIL=7.72;
 /** Road-relative, frame-rate stable arcade motorcycle physics.
  * Tire grip and body roll respond to speed, brake and shoulder terrain.
@@ -10,7 +11,6 @@ export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,rout
  const offset=p.x-curveAt(p.z,route);
  const onRoad=Math.abs(offset)<ROAD_HALF-.25;
  const speedRatio=clamp(p.speed/70,0,1);
- const grip=onRoad?1:.48;
  const acceleration=tuning.accel||1,maxSpeed=tuning.topSpeed||1,handling=tuning.handling||1;
  const boosted=accel&&boost&&p.nitro>1&&!brake;
  if(accel)p.speed+=dt*(24+(boosted?35:0))*acceleration;else p.speed-=dt*(8+p.speed*.08);
@@ -20,20 +20,27 @@ export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,rout
  p.nitro=clamp(p.nitro+(boosted?-28:7.7)*dt,0,100);
  // Mild steering lock reduction at top speed: prevents instantaneous lane snapping.
  const response=1-Math.exp(-dt*(8.5+2.0*(1-speedRatio)));
+ const previousSteer=p.steer||0;
  p.steer=(p.steer||0)+(clamp(steer,-1,1)-(p.steer||0))*response;
+ const traction=evolveTraction(p,{speed:p.speed,steer:p.steer,brake,offRoad:!onRoad,dt});
+ p.tractionLoss=traction.loss;p.lastInputSteer=previousSteer;
+ const grip=traction.grip;
  const steeringReach=(7.3+p.speed*.12)*handling*(1-.19*speedRatio)*(brake?.70:1);
  const targetVelocity=worldSteer(p.steer)*steeringReach*grip;
- const rate=onRoad?8.5:3.5;
+ const rate=(onRoad?8.5:3.5)*(1-traction.slide*.48);
  p.lateralVelocity=(p.lateralVelocity||0)+(targetVelocity-(p.lateralVelocity||0))*(1-Math.exp(-dt*rate));
  const oldVel=p.lateralVelocity;
+ // The tyre releases lateral momentum during a slide and regains grip gradually.
+ p.slideVelocity=(p.slideVelocity||0)*Math.exp(-dt*(5.3-traction.slide*3.5))+(oldVel-targetVelocity)*traction.slide*dt*1.1;
+ p.slideVelocity=clamp(p.slideVelocity,-3.4,3.4);
  p.z+=p.speed*dt;
- p.x+=curveAt(p.z,route)-curveAt(old.z,route)+p.lateralVelocity*dt;
+ p.x+=curveAt(p.z,route)-curveAt(old.z,route)+(p.lateralVelocity+p.slideVelocity)*dt;
  let railImpact=false,offRoad=false;
  const nextOffset=p.x-curveAt(p.z,route);
  if(Math.abs(nextOffset)>ROAD_HALF-.25){offRoad=true;p.speed=Math.max(0,p.speed-dt*(14+speedRatio*8))}
  if(Math.abs(nextOffset)>ROAD_RAIL){
   p.x=curveAt(p.z,route)+Math.sign(nextOffset)*ROAD_RAIL;
-  p.lateralVelocity=-p.lateralVelocity*.22;
+  p.lateralVelocity=-p.lateralVelocity*.22;p.slideVelocity=0;
   p.speed*=.87;
   p.contactJolt=Math.max(p.contactJolt||0,.65);
   railImpact=true;
@@ -44,6 +51,6 @@ export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,rout
  p.suspension=(p.suspension||0)*Math.exp(-dt*7);
  p.contactJolt=(p.contactJolt||0)*Math.exp(-dt*5.5);
  if(offRoad)p.suspension=Math.min(.15,p.suspension+.020);
- p.slip=clamp(Math.abs(targetVelocity-oldVel)/Math.max(3,p.speed)*.16,0,.35);
- return {old,boosted,railImpact,offRoad,grip,bank:p.bank,slip:p.slip};
+ p.slip=clamp(traction.slide*.72+Math.abs(targetVelocity-oldVel)/Math.max(3,p.speed)*.16,0,1);
+ return {old,boosted,railImpact,offRoad,grip,bank:p.bank,slip:p.slip,tractionLoss:p.tractionLoss};
 }

@@ -1,3 +1,32 @@
+# ASFALTO BRUTAL v1.8 — Tráfego, IA e aderência
+
+Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
+
+## Novidades verificadas
+
+- **Seis estilos de rivais**: cauteloso, velocista, briguento, técnico, imprudente e estrategista, com diferenças reais em aceleração de recuperação, velocidade-alvo, troca de faixa e frequência de golpes.
+- **Tráfego reativo**: automóveis procuram faixas livres, freiam se não podem ultrapassar e trocam de faixa progressivamente, sem teleporte. Também consideram motos rápidas se aproximando por trás.
+- **Contato NPC misto**: detecção contínua e separação entre carros e motos adversárias e entre carros, sem afetar a rotina de contato do jogador.
+- **Aderência dinâmica**: frenagem em alta velocidade durante curvas reduz tração, provoca deslocamento lateral residual e recuperação gradual. As marcas de pneus da v1.7 continuam sendo exibidas.
+- **Cenários**: nova sinalização/luminárias decorativas, rochas na serra e no deserto e espuma do mar na costa, usando InstancedMesh e quantidades menores na configuração LEVE.
+- **Qualidade**: nova suíte de testes cobrindo tráfego, ultrapassagens seguras, aderência e contatos entre veículos.
+
+## Limitações
+
+A física permanece arcade simplificada: não simula pneus ou suspensão com corpos rígidos 3D. A biblioteca Three.js é carregada por CDN; a primeira execução requer internet. O jogo abre no navegador via `INICIAR-JOGO.bat` (não é um EXE nativo).
+
+## Controles
+
+W/↑ acelerar, A/D ou ←/→ virar, Espaço/S frear, Shift nitro, J/K atacar, 1–5 trocar arma, P/Esc pausar, H mostrar hitboxes. Compatível com gamepad nos comandos da v1.7.
+
+## Testes
+
+No projeto de código-fonte: `npm test` (Node.js necessário apenas para executar os testes). O BAT da versão de jogar utiliza somente PowerShell nativo do Windows.
+
+---
+
+## Histórico anterior (v1.7)
+
 # ASFALTO BRUTAL v1.7 — Derrapagem e ultrapassagens
 
 A v1.7 continua diretamente sobre a v1.6, preservando motos, cinco armas, garagem, polícia, hitboxes, controles e publicação em GitHub Pages.

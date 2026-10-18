@@ -66,8 +66,45 @@ export class RoadWorld{
   const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,1,1,1,headingAt(z,route));rail.instanceMatrix.needsUpdate=true;
   const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z);posts.instanceMatrix.needsUpdate=true;
   for(let z=260;z<RACE_LENGTH;z+=490){this.createSign(z,config,route)}
-  this.createFinish(route)
+  this.createFinish(route);this.createRoadsideDetail(random);
   const sunBall=this.add(new THREE.Mesh(new THREE.SphereGeometry(20,16,8),new THREE.MeshBasicMaterial({color:route==='desert'?0xffd69b:0xffeac5,fog:false})));sunBall.position.set(-150,110,230);this.sunBall=sunBall;
+ }
+ /** Geometry is batched with InstancedMesh: extra landmarks without extra draw calls per item. */
+ createRoadsideDetail(random){
+  const route=this.route,low=this.quality==='low',count=low?32:75;
+  const studs=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.65,.52,.40),new THREE.MeshLambertMaterial({color:route==='desert'?0xd5ac74:route==='highlands'?0x88a5a5:0xb5d5d8}),count));
+  const posts=this.add(new THREE.InstancedMesh(new THREE.CylinderGeometry(.09,.13,3.7,5),mat(0x344c55),count));
+  const accents=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.85,.34,.24),new THREE.MeshBasicMaterial({color:route==='desert'?0xffbc72:route==='highlands'?0x8fdfff:0xffdd9c}),count));
+  for(let i=0;i<count;i++){
+   const z=-30+i*(RACE_LENGTH+120)/count,side=i%2?1:-1;
+   const x=curveAt(z,route)+side*(10.9+random()*1.6);
+   placeInstance(posts,i,x,1.85,z,1,1,1,headingAt(z,route));
+   placeInstance(studs,i,x,3.65,z,.95,1,1,headingAt(z,route));
+   placeInstance(accents,i,x,3.67,z+side*.15,.85,1,1,headingAt(z,route));
+  }
+  studs.instanceMatrix.needsUpdate=true;posts.instanceMatrix.needsUpdate=true;accents.instanceMatrix.needsUpdate=true;
+  if(route==='desert'){
+   // Layered sandstone slabs at varied angles suggest a wider, deeper desert landscape.
+   const rocks=this.add(new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),mat(0xab7756),low?65:145));
+   for(let i=0;i<rocks.count;i++){
+    const z=random()*(RACE_LENGTH+180)-65,side=i%2?1:-1,scale=1.5+random()*4;
+    placeInstance(rocks,i,curveAt(z,route)+side*(23+random()*65),scale*.35-.20,z,scale*1.7,scale*.67,scale*.8,random()*Math.PI);
+   }rocks.instanceMatrix.needsUpdate=true;
+  }else if(route==='highlands'){
+   // Low rock ledges and alpine boulders make the mountain route feel less empty.
+   const rocks=this.add(new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),mat(0x5e7384),low?60:140));
+   for(let i=0;i<rocks.count;i++){
+    const z=random()*(RACE_LENGTH+180)-65,side=i%2?1:-1,scale=.9+random()*2.5;
+    placeInstance(rocks,i,curveAt(z,route)+side*(14+random()*42),scale*.35-.2,z,scale*1.4,scale*.8,scale,random()*Math.PI);
+   }rocks.instanceMatrix.needsUpdate=true;
+  }else{
+   // White surf flecks separate the sea from the distant sky.
+   const waves=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(1,.012,.09),new THREE.MeshBasicMaterial({color:0xd3f5f5,transparent:true,opacity:.36,depthWrite:false}),low?100:260));
+   for(let i=0;i<waves.count;i++){
+    const z=random()*(RACE_LENGTH+400)-90;
+    placeInstance(waves,i,-130-random()*360,-.153,z,1+random()*3,1,1+random()*5);
+   }waves.instanceMatrix.needsUpdate=true;
+  }
  }
  createFinish(route){
   const finishZ=RACE_LENGTH;const group=new THREE.Group();

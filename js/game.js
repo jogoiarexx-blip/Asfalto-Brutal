@@ -16,6 +16,9 @@ import {WEAPONS, weaponById, weaponForRival, strikeIsActive, sideTowardPlayer, c
 import {animateRider,reactionAmount} from './rider-animation.js';
 import {chooseOvertake,resolveRivalPair,policeCurveTarget,skidIntensity} from './race-dynamics.js';
 import {SkidMarks} from './skid-marks.js';
+import {rivalStyle,rivalPace,rivalAttackCooldown,rivalLaneRate} from './rival-styles.js';
+import {planTraffic} from './traffic-ai.js';
+import {separateNpcPair} from './npc-contact.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -31,7 +34,7 @@ export class Game{
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.21;
   this.renderer.shadowMap.enabled=false;
   this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.mode='menu';
-  this.skidMarks=null;this.rivalCollisions=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
+  this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;
   this.bindUI();this.renderGarage();this.buildTrack();this.resize();
@@ -43,7 +46,7 @@ export class Game{
  buildTrack(){
   this.removeTrack();this.world=new RoadWorld(this.scene,this.route,this.resolvedQuality);this.skidMarks=new SkidMarks(this.scene,this.resolvedQuality);
   this.playerBike=createBike(chosenBike(this.garage).color,{player:true,quality:this.resolvedQuality});setBikeWeapon(this.playerBike,this.selectedWeapon);this.scene.add(this.playerBike.group);
-  this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,bank:0,suspension:0,contactJolt:0,slip:0};
+  this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
   this.playerBike.group.position.set(this.player.x,0,0);this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
   this.camera.position.set(this.player.x+1.6,5.2,-13.5);this.camera.lookAt(this.player.x,1.7,24);this.world.update(0);
  }
@@ -64,13 +67,15 @@ export class Game{
  populate(){
   for(let i=0;i<6;i++){
    const vehicle=createBike(rivalsColors[i],{quality:this.resolvedQuality});setBikeWeapon(vehicle,weaponForRival(i));this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.bike,0xffbd4e);
-   const a={vehicle,z:48+i*17,x:0,baseLane:(i%3)-1,laneOffset:(i%3-1)*3.35,speed:nextRacerSpeed(i,this.route),health:2,phase:i*.8,knock:0,knockPower:0,stunTimer:0,attackCD:rand(3,6),attackAge:Infinity,attackSide:0,weaponId:weaponForRival(i),fallen:0,fallSide:0,aggression:aggressionOf(i),laneAim:0,guardTimer:0,dodgeTimer:0,dodgeTarget:0,defenseCD:0,defenseAttackId:0,passTimer:0,passOffset:null,contactRoll:0};
+   const style=rivalStyle(i);
+   const a={style,vehicle,z:48+i*17,x:0,baseLane:(i%3)-1,laneOffset:(i%3-1)*3.35,speed:nextRacerSpeed(i,this.route),health:2,phase:i*.8,knock:0,knockPower:0,stunTimer:0,attackCD:rand(3,6),attackAge:Infinity,attackSide:0,weaponId:weaponForRival(i),fallen:0,fallSide:0,aggression:aggressionOf(i)*(.80+style.bravery*.32),laneAim:0,guardTimer:0,dodgeTimer:0,dodgeTarget:0,defenseCD:0,defenseAttackId:0,passTimer:0,passOffset:null,contactRoll:0};
    a.x=curveAt(a.z,this.route)+a.laneOffset;a.yaw=headingAt(a.z,this.route);this.rivals.push(a);vehicle.group.position.set(a.x,0,a.z);
   }
   for(let i=0;i<11;i++){
    const vehicle=createCar(carColors[i%carColors.length],{quality:this.resolvedQuality});this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.car,0x58d9ff);
-   const a={vehicle,z:155+i*160+rand(-30,50),x:0,lane:[-1,0,1][i%3],speed:rand(16,29),phase:rand(0,7)};
-   a.x=curveAt(a.z,this.route)+a.lane*3.95;a.yaw=headingAt(a.z,this.route);this.traffic.push(a);vehicle.group.position.set(a.x,0,a.z);
+   const cruiseSpeed=rand(19,33);
+   const a={vehicle,z:155+i*160+rand(-30,50),x:0,lane:[-1,0,1][i%3],targetLane:[-1,0,1][i%3],laneOffset:0,speed:cruiseSpeed,cruiseSpeed,phase:rand(0,7),changeCD:rand(.4,2.1)};
+   a.laneOffset=a.lane*3.95;a.x=curveAt(a.z,this.route)+a.laneOffset;a.yaw=headingAt(a.z,this.route);this.traffic.push(a);vehicle.group.position.set(a.x,0,a.z);
   }
   for(let i=0;i<9;i++){
    const type=i%4===2?'repair':'nitro',z=260+i*410;
@@ -161,7 +166,7 @@ export class Game{
   const lanes=[-4.4,0,4.4].sort((a,b)=>Math.abs((p.x-curveAt(p.z,this.route))-a)-Math.abs((p.x-curveAt(p.z,this.route))-b));
   const lane=lanes.find(offset=>others.every(e=>Math.abs(e.z-p.z)>8||Math.abs(e.x-curveAt(p.z,this.route)-offset)>2.6));
   if(lane===undefined)p.z=Math.max(0,p.z-12);
-  p.x=curveAt(p.z,this.route)+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
+  p.x=curveAt(p.z,this.route)+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.slideVelocity=0;p.tractionLoss=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
   this.playerFall=null;setCrashRider(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
  }
 
@@ -219,7 +224,7 @@ export class Game{
   this.heat=updateHeat(this.heat,dt,{policeNear:!!this.police&&Math.abs(this.police.z-p.z)<75});
   if(this.playerFall){
    this.playerFall=nextFall(this.playerFall,dt);
-   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
+   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
    $('speed-lines').classList.remove('active');this.world.update(p.z);this.updateHUD();this.audio.update(0,false,false);this.audio.siren(!!this.police,this.police?.z-p.z||0);
    $('fall-progress').style.width=`${Math.round(100*(1-this.playerFall.remaining/this.playerFall.total))}%`;
    if(this.playerFall.remaining<=0)this.recoverPlayer();
@@ -235,7 +240,7 @@ export class Game{
   if(movement.offRoad)this.cameraShake=Math.max(this.cameraShake,.045);
   if(movement.railImpact&&this.hurtCooldown<=0)this.hit(11,true,0);
   this.dustClock-=dt;if(movement.offRoad&&p.speed>12&&this.dustClock<=0){this.dustClock=.16;this.spawnDust(p.x,p.z)}
-  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveContacts(movement.old);
+  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.resolveContacts(movement.old);
   const skid=skidIntensity({speed:p.speed,steer:p.steer,slip:p.slip,brake,offRoad:movement.offRoad});
   if(skid>.17&&this.skidMarks){this.skidMarks.add(p.x,p.z,p.yaw,skid);if(this.dustClock<=0&&movement.offRoad)this.spawnDust(p.x,p.z)}
   this.updateCombat(dt);this.updatePickups(dt);this.updateEffects(dt);this.updatePlayerModel(dt,movement.boosted);
@@ -266,14 +271,17 @@ export class Game{
    }
    // Road-local lane evaluation: flank the player without driving through cars or teammates.
    const others=[...this.traffic,...this.rivals,...(this.police?[this.police]:[])].filter(o=>o!==e&&(o.fallen??0)<=0&&Math.abs(o.z-e.z)<75).map(o=>({z:o.z,offset:o.x-curveAt(o.z,this.route)}));
-   const desired=pickRivalLane({currentOffset:e.laneOffset,preferredOffset:e.baseLane*3.35,z:e.z,speed:e.speed,playerZ:this.playerFall?-9999:this.player.z,playerOffset:this.player.x-curveAt(this.player.z,this.route),aggression:e.aggression,obstacles:others});
+   const desired=pickRivalLane({currentOffset:e.laneOffset,preferredOffset:e.style?.preferredLane??e.baseLane*3.35,z:e.z,speed:e.speed,playerZ:this.playerFall?-9999:this.player.z,playerOffset:this.player.x-curveAt(this.player.z,this.route),aggression:e.aggression,obstacles:others});
    // Commit briefly to passing a slower vehicle, preventing left-right lane oscillation.
    e.passTimer=Math.max(0,(e.passTimer||0)-dt);
-   if(e.passTimer===0){e.passOffset=chooseOvertake(e,[...this.rivals,...this.traffic,...(this.police?[this.police]:[])],this.route);if(e.passOffset!==null)e.passTimer=.95}
+   if(e.passTimer===0){e.passOffset=chooseOvertake(e,[...this.rivals,...this.traffic,...(this.police?[this.police]:[])],this.route);if(e.passOffset!==null)e.passTimer=.75+(e.style?.passing??1)*.3}
    const target=e.dodgeTimer>0?e.dodgeTarget:(e.passTimer>0&&e.passOffset!==null?e.passOffset:desired)+Math.sin(e.phase*.46+i)*.12+(e.knockPower||0)*(e.knock/.63);
-   e.laneOffset=approach(e.laneOffset,clamp(target,-5.4,5.4),dt*(e.dodgeTimer>0?11:e.stunTimer>0?7:4.2));
+   e.laneOffset=approach(e.laneOffset,clamp(target,-5.4,5.4),dt*rivalLaneRate(e.style||rivalStyle(i),{stunned:e.stunTimer>0,dodging:e.dodgeTimer>0}));
    e.x=curveAt(e.z,this.route)+e.laneOffset;
-   const base=nextRacerSpeed(i,this.route);const chase=this.player.z-e.z>0&&this.player.z-e.z<95?Math.min(4,e.aggression*5):0;e.speed=approach(e.speed,e.stunTimer>0?Math.max(15,base*.56):base+chase,dt*3.5);
+   const base=nextRacerSpeed(i,this.route);const curveDelta=Math.abs(headingAt(e.z+28,this.route)-headingAt(e.z,this.route));const corner=clamp(curveDelta/.42,0,1);
+   const styled=rivalPace(e.style||rivalStyle(i),base,corner);
+   const chase=this.player.z-e.z>0&&this.player.z-e.z<95?Math.min(4,e.aggression*5):0;
+   e.speed=approach(e.speed,e.stunTimer>0?Math.max(15,styled*.56):styled+chase,dt*(2.8+(e.style?.agility||1)*.9));
    e.yaw=headingAt(e.z,this.route)+clamp((e.laneOffset-(e.old.x-curveAt(e.old.z,this.route)))*.12,-.24,.24);
    e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=lerpAngle(e.vehicle.group.rotation.y,e.yaw,Math.min(1,dt*9));
    const lateralChange=e.laneOffset-(e.old.x-curveAt(e.old.z,this.route));
@@ -286,7 +294,7 @@ export class Game{
     const side=sideTowardPlayer(e.x,this.player.x);
     const inReach=strikeCandidate({...e,yaw:e.yaw},this.player,side,'bike',weapon)!==null;
     if(inReach){
-     e.attackCD=rand(3.1,5.1)/(0.7+e.aggression*.45);e.attackAge=0;e.attackSide=side;
+     e.attackCD=rivalAttackCooldown(e.style||rivalStyle(i),e.aggression)*rand(.85,1.12);e.attackAge=0;e.attackSide=side;
      const damage=enemyDamage(weapon,e.aggression);
      if(this.hit(damage,false,0,side))this.notify(`RIVAL ATACOU COM ${weapon.name}!`);
     }
@@ -311,13 +319,50 @@ export class Game{
   }
  }
  updateTraffic(dt){
+  const obstacles=[...this.traffic,...this.rivals,...(this.police?[this.police]:[])];
   for(const e of this.traffic){
    e.vehicle.group.visible=Math.abs(e.z-this.player.z)<390;
-   e.old={x:e.x,z:e.z,yaw:e.yaw};e.z+=e.speed*dt;e.x=curveAt(e.z,this.route)+e.lane*3.95;e.yaw=headingAt(e.z,this.route);
-   e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=e.yaw;
+   e.old={x:e.x,z:e.z,yaw:e.yaw};
+   e.changeCD=Math.max(0,(e.changeCD||0)-dt);
+   const planned=planTraffic(e,obstacles,dt,{allowChange:e.changeCD===0});
+   if(planned.targetLane!==e.targetLane){e.changeCD=2.2+rand(0,.6)}
+   e.targetLane=planned.targetLane;
+   e.speed=planned.speed;e.laneOffset=planned.offset;
+   e.z+=e.speed*dt;
+   e.x=curveAt(e.z,this.route)+e.laneOffset;
+   e.yaw=headingAt(e.z,this.route)+clamp((e.laneOffset-(e.old.x-curveAt(e.old.z,this.route)))*.18,-.17,.17);
+   e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=lerpAngle(e.vehicle.group.rotation.y,e.yaw,Math.min(1,dt*7));
    if(e.knock>0){e.x+=e.knockPower*e.knock*.55;e.knock=Math.max(0,e.knock-dt);e.vehicle.group.position.x=e.x}
    for(const w of e.vehicle.wheels||[])w.rotation.x+=e.speed*dt/.43;
-   if(e.z<this.player.z-70){e.z=this.player.z+rand(550,980);e.lane=[-1,0,1][Math.floor(Math.random()*3)];e.speed=rand(16,29);e.x=curveAt(e.z,this.route)+e.lane*3.95;e.yaw=headingAt(e.z,this.route);e.old={x:e.x,z:e.z,yaw:e.yaw};e.vehicle.group.position.set(e.x,0,e.z)}
+   if(e.z<this.player.z-70){
+    e.z=this.player.z+rand(550,980);
+    const otherCars=this.traffic.filter(o=>o!==e);
+    const lane=[-1,0,1].find(l=>otherCars.every(o=>Math.abs(o.z-e.z)>24||Math.abs((o.laneOffset||0)-l*3.95)>2))??[-1,0,1][Math.floor(Math.random()*3)];
+    e.lane=e.targetLane=lane;e.laneOffset=lane*3.95;e.speed=e.cruiseSpeed;
+    e.changeCD=2;e.x=curveAt(e.z,this.route)+e.laneOffset;e.yaw=headingAt(e.z,this.route);
+    e.old={x:e.x,z:e.z,yaw:e.yaw};e.vehicle.group.position.set(e.x,0,e.z);
+   }
+  }
+ }
+ resolveTrafficContacts(){
+  // Cars now exchange contact with other cars and rival bikes; the player solver is separate.
+  const agents=[...this.traffic,...this.rivals];
+  for(let i=0;i<agents.length;i++)for(let j=i+1;j<agents.length;j++){
+   const a=agents[i],b=agents[j];
+   if(a.vehicle.kind==='bike'&&b.vehicle.kind==='bike')continue; // already solved by resolveRivalContacts
+   if(Math.abs(a.z-b.z)>11||Math.abs(a.x-b.x)>5)continue;
+   const contact=separateNpcPair(a,b,this.route);
+   if(!contact)continue;
+   this.npcContacts++;
+   for(const e of [a,b]){
+    e.yaw=headingAt(e.z,this.route);
+    e.vehicle.group.position.set(e.x,0,e.z);
+    e.vehicle.group.rotation.y=e.yaw;
+   }
+   if(this.effects.length<65&&(a.contactFX??-Infinity)<this.elapsed-.6&&(b.contactFX??-Infinity)<this.elapsed-.6){
+    a.contactFX=b.contactFX=this.elapsed;
+    this.spawnSparks((a.x+b.x)*.5,1.1,(a.z+b.z)*.5,0xfbc184);
+   }
   }
  }
  resolveContacts(playerOld){
@@ -341,7 +386,7 @@ export class Game{
   const contact=contactResponse(p,e,HULLS.bike,hull,{contactDx:atPlayer.x-atOther.x,contactDz:atPlayer.z-atOther.z});
   p.z=contact.z;
   p.x=clamp(contact.x,curveAt(p.z,this.route)-7.72,curveAt(p.z,this.route)+7.72);
-  p.speed=contact.speed;p.lateralVelocity=contact.lateralVelocity;
+  p.speed=contact.speed;p.lateralVelocity=contact.lateralVelocity;p.slideVelocity=(p.slideVelocity||0)*.4;
   p.contactJolt=Math.max(p.contactJolt||0,Math.min(1.4,contact.intensity*1.3));
   p.suspension=Math.max(p.suspension||0,Math.min(.20,contact.intensity*.19));
   p.yaw=headingAt(p.z,this.route)-p.steer*.105;

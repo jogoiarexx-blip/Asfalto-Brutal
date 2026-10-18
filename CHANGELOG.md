@@ -1,3 +1,12 @@
+## v1.8 — Personalidades, tráfego e tração dinâmica (18/10/2026)
+
+- Estilos de pilotagem distintos: cauteloso, velocista, briguento, técnico, imprudente, estrategista.
+- IA de automóveis avalia carros e motos à frente e atrás, escolhe faixa com segurança e reduz a velocidade.
+- Solução de contato para pares carro/carro e carro/moto usando verificação contínua.
+- Modelo determinístico de perda e recuperação de aderência, incluindo deslizamento residual.
+- Sinalização e elementos de cenário otimizados com geometrias instanciadas em todos os mapas.
+- Suíte `traffic-v18.test.mjs`, somada à regressão das versões anteriores.
+
 ## v1.7 — Derrapagem, disputas entre motos e polícia nas curvas
 
 - Implementado `race-dynamics.js`: regras determinísticas de ultrapassagem, colisões entre os seis rivais, frenagem antecipada da polícia e cálculo de derrapagem.
