@@ -22,6 +22,7 @@ import {separateNpcPair} from './npc-contact.js';
 import {graphicsProfile,automaticQuality} from './graphics-quality.js';
 import {CameraDirector,frameCamera,CAMERA_MODES,nextCameraMode} from './camera-director.js';
 import {LIGHT_MODES} from './lighting-director.js';
+import {preparePlayerVehicle,ensurePlayerVehicle,playerOutsideView} from './player-visibility.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -40,7 +41,7 @@ export class Game{
   this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
-  this.bindUI();this.renderGarage();this.buildTrack();this.resize();
+  this.heroProbe=new THREE.Vector3();this.heroOutOfViewTime=0;this.bindUI();this.renderGarage();this.buildTrack();this.resize();
   addEventListener('resize',()=>this.resize());this.renderer.setAnimationLoop(t=>this.frameLoop(t));
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&this.mode==='race')this.pause()});
   $('loading').classList.add('hidden');window.__asfaltoBooted=true;
@@ -52,9 +53,9 @@ export class Game{
  configureShadows(vehicle){if(!this.renderProfile.shadows)return;let count=0;vehicle.group.traverse(o=>{if(o.isMesh&&!o.material?.transparent&&o.material?.type!=='MeshBasicMaterial'&&count<10){o.castShadow=true;count++}})}
  buildTrack(){
   this.removeTrack();this.automaticShadowDrop=false;const profile=this.renderProfile;this.renderer.shadowMap.enabled=profile.shadows;this.world=new RoadWorld(this.scene,this.route,this.resolvedQuality,profile);this.skidMarks=new SkidMarks(this.scene,this.resolvedQuality);
-  this.playerBike=createBike(chosenBike(this.garage).color,{player:true,quality:this.resolvedQuality,model:this.garage.selected});this.configureShadows(this.playerBike);setBikeWeapon(this.playerBike,this.selectedWeapon);this.scene.add(this.playerBike.group);
+  this.playerBike=createBike(chosenBike(this.garage).color,{player:true,quality:this.resolvedQuality,model:this.garage.selected});this.configureShadows(this.playerBike);setBikeWeapon(this.playerBike,this.selectedWeapon);preparePlayerVehicle(this.playerBike);this.scene.add(this.playerBike.group);
   this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
-  this.playerBike.group.position.set(this.player.x,0,0);this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
+  this.playerBike.group.position.set(this.player.x,0,0);this.heroOutOfViewTime=0;this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
   this.cameraDirector.reset(frameCamera({player:this.player,route:this.route,mode:this.cameraMode,menu:true,reducedMotion:this.reducedMotion}));this.world.update(0,.016,this.lighting);
  }
  removeTrack(){
@@ -187,7 +188,7 @@ export class Game{
   const lane=lanes.find(offset=>others.every(e=>Math.abs(e.z-p.z)>8||Math.abs(e.x-curveAt(p.z,this.route)-offset)>2.6));
   if(lane===undefined)p.z=Math.max(0,p.z-12);
   p.x=curveAt(p.z,this.route)+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.slideVelocity=0;p.tractionLoss=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
-  this.playerFall=null;setCrashRider(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
+  this.playerFall=null;setCrashRider(this.playerBike,false);ensurePlayerVehicle(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);this.heroOutOfViewTime=0;$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
  }
 
  spawnImpactRing(x,y,z,color=0xffef9c){
@@ -479,6 +480,7 @@ export class Game{
  updateEffects(dt){for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.kind==='ring'){const t=Math.max(0,1-e.life/e.maxLife);e.mesh.scale.setScalar(.75+t*3);e.mesh.material.opacity=Math.max(0,.75*(1-t))}else{e.vy-=dt*16;e.mesh.position.x+=e.vx*dt;e.mesh.position.y+=e.vy*dt;e.mesh.position.z+=e.vz*dt;e.mesh.scale.setScalar(Math.max(.01,e.life/e.maxLife))}if(e.life<=0){this.scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();this.effects.splice(i,1)}}}
  updatePlayerModel(dt,boosting){
   const p=this.player,b=this.playerBike;
+  ensurePlayerVehicle(b,!!this.playerFall);
   if(this.playerFall){
    const pose=crashPose(this.playerFall);
    b.group.position.set(p.x,pose.lift,p.z);
@@ -506,6 +508,18 @@ export class Game{
   const pose=frameCamera({player:p,route:this.route,mode:this.cameraMode,nitro:this.mode==='race'&&this.input.boosting&&p.nitro>0,menu:this.mode==='menu',reducedMotion:this.reducedMotion,fall:fall?{...fall,side:this.playerFall.side}:null});
   if(shake){pose.position.x+=shake*.20;pose.position.y+=shake*.12;}
   this.cameraDirector.update(dt,pose);
+  this.camera.updateMatrixWorld();
+  // Sanity check the BODY, not its ground decal. A camera transition or an
+  // invalid persisted view must never strand the rider outside the viewport.
+  if (this.mode==='race' || this.mode==='countdown' || this.mode==='menu') {
+   this.heroProbe.set(p.x,1.55,p.z).project(this.camera);
+   this.heroOutOfViewTime=playerOutsideView(this.heroProbe)?this.heroOutOfViewTime+dt:0;
+   if (this.heroOutOfViewTime>.18 && !this.playerFall) {
+    const rescuePose=frameCamera({player:p,route:this.route,mode:'chase',menu:this.mode==='menu',reducedMotion:true});
+    this.cameraDirector.reset(rescuePose);
+    this.heroOutOfViewTime=0;
+   }
+  }
  }
  updateHUD(){const p=this.player;$('speed').textContent=String(kmh(p.speed));$('place').innerHTML=`${this.position()}<span>º</span>`;$('timer').textContent=formatTime(this.elapsed);$('health-label').textContent=`${Math.ceil(p.health)}%`;$('health-bar').style.width=`${p.health}%`;$('nitro-label').textContent=`${Math.ceil(p.nitro)}%`;$('nitro-bar').style.width=`${p.nitro}%`;$('weapon-hud').textContent=this.weapon.hud;$('police-status').classList.toggle('is-hidden',!this.police);$('wanted-fill').style.width=`${Math.round(this.heat)}%`;$('police-distance').textContent=this.police?`${Math.round(Math.abs(this.player.z-this.police.z))} M`:'--';const progress=clamp(100*p.z/RACE_LENGTH,0,100);$('progress-fill').style.width=`${progress}%`;$('progress-pin').style.left=`${progress}%`;$('distance').textContent=`${Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')} / ${RACE_LENGTH.toLocaleString('pt-BR')} M`}
  handleMenuGamepad(){

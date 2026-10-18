@@ -1,3 +1,11 @@
+## v2.0.1 — Correção de visibilidade da moto do jogador
+
+- Garante que a geometria principal da moto e do piloto permanece visível (a sombra é um objeto separado).
+- Evita que partes articuladas da moto do jogador desapareçam por culling incorreto.
+- Câmera ganha correção de enquadramento quando o motociclista sai da área visível.
+- Preserva ejeção durante quedas e restabelece visibilidade após recuperação.
+- Testes automatizados de visibilidade, sombra, quedas e enquadramento.
+
 ## v2.0 — Câmera dinâmica e iluminação de cenário
 
 - Três câmeras alternáveis: Clássica, Esportiva e Cinemática.
