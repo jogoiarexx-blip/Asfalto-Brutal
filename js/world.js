@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,curveAt,headingAt} from './config.js';
 import {buildRoadsideArchitecture} from './roadside-architecture.js';
+import {lightingFrame,lightBlend} from './lighting-director.js';
 const UP=new THREE.Vector3(0,1,0);const MATRIX=new THREE.Matrix4();const Q=new THREE.Quaternion();const V=new THREE.Vector3();const S=new THREE.Vector3();
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}}
 function ribbon(route,from,to,height,step,material){const verts=[],indices=[],uvs=[];for(let z=-120;z<=RACE_LENGTH+320;z+=8){const x=curveAt(z,route);verts.push(x+from,height,z,x+to,height,z);uvs.push(0,z/16,1,z/16);if(verts.length>6){const i=verts.length/3-4;indices.push(i,i+2,i+1,i+1,i+2,i+3)}}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();return new THREE.Mesh(geo,material)}
@@ -25,10 +26,11 @@ function skyTexture(config,route){
  ctx.fillStyle=grad;ctx.fillRect(0,0,8,256);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
 }
 export class RoadWorld{
- constructor(scene,route='coast',quality='high',profile={shadows:false,shadowMapSize:0}) {this.scene=scene;this.route=route;this.quality=quality;this.profile=profile;this.children=[];this.lights=[];this.build()}
+ constructor(scene,route='coast',quality='high',profile={shadows:false,shadowMapSize:0}) {this.scene=scene;this.route=route;this.quality=quality;this.profile=profile;this.children=[];this.lights=[];this.exposure=1.18;this.build()}
  add(o){this.scene.add(o);this.children.push(o);return o}
  build(){const route=this.route,config=ROUTES[route];this.sky=skyTexture(config,route);this.scene.background=this.sky;this.scene.fog=new THREE.Fog(config.fog,config.fogNear,config.fogFar);
-  this.add(new THREE.HemisphereLight(0xddeaf7,config.ground,1.7));const sun=new THREE.DirectionalLight(config.light,2.15);sun.position.set(-35,110,60);this.add(sun);this.sun=sun;
+  const hemi=this.add(new THREE.HemisphereLight(0xddeaf7,config.ground,1.55));this.hemi=hemi;const sun=new THREE.DirectionalLight(config.light,2.15);sun.position.set(-35,110,60);this.add(sun);this.sun=sun;
+  if(this.quality==='high'||this.quality==='ultra'){const fill=new THREE.DirectionalLight(0x86b7e8,.3);fill.position.set(26,40,-18);fill.castShadow=false;this.add(fill);this.add(fill.target);this.fill=fill;}
   if(this.profile.shadows){sun.castShadow=true;const shadow=sun.shadow;shadow.mapSize.set(this.profile.shadowMapSize,this.profile.shadowMapSize);shadow.camera.left=-35;shadow.camera.right=35;shadow.camera.top=35;shadow.camera.bottom=-35;shadow.camera.near=1;shadow.camera.far=220;shadow.bias=-.0002;shadow.normalBias=.035;this.add(sun.target)}
   const ground=this.add(new THREE.Mesh(new THREE.PlaneGeometry(1250,RACE_LENGTH+1500),mat(config.ground)));ground.rotation.x=-Math.PI/2;ground.position.set(0,-.24,RACE_LENGTH/2);
   if(route==='coast'){const sea=this.add(new THREE.Mesh(new THREE.PlaneGeometry(390,RACE_LENGTH+1500),new THREE.MeshLambertMaterial({color:0x4485a1,emissive:0x183b56,emissiveIntensity:.3})));sea.rotation.x=-Math.PI/2;sea.position.set(-350,-.18,RACE_LENGTH/2)}
@@ -126,6 +128,17 @@ export class RoadWorld{
   grid.position.set(curveAt(finishZ,route),0,finishZ);grid.rotation.y=headingAt(finishZ,route);this.add(grid);group.position.set(curveAt(finishZ,route),0,finishZ);group.rotation.y=headingAt(finishZ,route);this.add(group);
  }
  createSign(z,config,route){const g=new THREE.Group(),sign=new THREE.Mesh(new THREE.BoxGeometry(6.8,2.5,.24),new THREE.MeshLambertMaterial({color:0x162837,emissive:0x12262a}));sign.position.y=6.2;g.add(sign);const canvas=document.createElement('canvas');canvas.width=512;canvas.height=190;const ctx=canvas.getContext('2d');ctx.fillStyle='#091923';ctx.fillRect(0,0,512,190);ctx.fillStyle='#ddff50';ctx.font='900 62px Impact, sans-serif';ctx.fillText('ASFALTO',24,78);ctx.fillStyle='#f6f9f3';ctx.font='900 67px Impact, sans-serif';ctx.fillText('BRUTAL  ↗',24,151);const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const poster=new THREE.Mesh(new THREE.PlaneGeometry(6.65,2.4),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));poster.position.set(0,6.2,.15);g.add(poster);const post=new THREE.Mesh(new THREE.BoxGeometry(.22,6,.25),mat(0x7f9098));post.position.set(0,2.95,0);g.add(post);g.position.set(curveAt(z,route)+11.4,0,z);g.rotation.y=headingAt(z,route);this.add(g)}
- update(z){if(this.sunBall)this.sunBall.position.z=z+260;if(this.profile.shadows&&this.sun){const x=curveAt(z,this.route);this.sun.position.set(x-35,110,z+60);this.sun.target.position.set(x,0,z+13);this.sun.target.updateMatrixWorld()}}
+ update(z,dt=.016,lightingMode='auto'){
+  const frame=lightingFrame({route:this.route,mode:lightingMode,progress:z/RACE_LENGTH,quality:this.quality});
+  this.sun.intensity=lightBlend(this.sun.intensity,frame.sunIntensity,dt);
+  this.hemi.intensity=lightBlend(this.hemi.intensity,frame.hemisphereIntensity,dt);
+  if(this.fill){this.fill.intensity=lightBlend(this.fill.intensity,frame.fillIntensity,dt);this.fill.color.setRGB(...frame.fillColor);this.fill.position.z=z-18;this.fill.position.x=curveAt(z,this.route)+26;this.fill.target.position.set(curveAt(z,this.route),0,z+15);this.fill.target.updateMatrixWorld();}
+  this.sun.color.setRGB(...frame.sunColor);
+  this.hemi.color.setRGB(...frame.skyColor);this.hemi.groundColor.setRGB(...frame.groundColor);
+  this.exposure=lightBlend(this.exposure,frame.exposure,dt);
+  if(this.sunBall)this.sunBall.position.z=z+260;
+  // Keep the shadow map centered on the rider instead of a fixed start line.
+  if(this.profile.shadows&&this.sun){const x=curveAt(z,this.route);this.sun.position.set(x-35,110,z+60);this.sun.target.position.set(x,0,z+13);this.sun.target.updateMatrixWorld()}
+ }
  dispose(){for(const obj of this.children){this.scene.remove(obj);obj.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(m.map)m.map.dispose();m.dispose()}}})}this.children.length=0;this.scene.fog=null;this.scene.background=null;if(this.sun?.shadow?.dispose)this.sun.shadow.dispose();if(this.sky){this.sky.dispose();this.sky=null}}
 }

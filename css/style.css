@@ -75,3 +75,10 @@
 /* v1.9: adjust graphical controls to three columns without clipping. */
 .menu-settings{flex-wrap:wrap;gap:10px 20px}.menu-settings label{white-space:nowrap}.menu-settings select{max-width:190px}
 @media(max-width:550px){.menu-settings{gap:8px 12px}.menu-settings label{font-size:10px}.menu-settings select{max-width:140px}}
+
+/* v2.0: compact camera/lighting selectors scale down on small screens. */
+.menu-settings{flex-wrap:wrap;gap:9px 17px}
+.menu-settings label{white-space:nowrap}
+.menu-settings select{max-width:175px}
+@media(max-width:800px){.menu-settings{gap:8px 12px}.menu-settings label{font-size:11px}}
+@media(max-width:550px){.menu-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.menu-settings label{flex-wrap:wrap;gap:5px}.menu-settings select{max-width:100%}}

@@ -20,3 +20,5 @@ NOVO v1.7: derrapagem com marcas de pneu, ultrapassagens, colisões entre rivais
 NOVO v1.8: 6 personalidades de rivais, trânsito que muda de faixa e freia, derrapagem com perda de aderência e mais detalhes visuais nas pistas.
 
 NOVO v1.9: novos carros e motos, cenários arquitetônicos e configurações de sombras e renderização.
+
+V2.0: C = trocar câmera; R3 = trocar câmera no controle. Menu: câmera e iluminação.

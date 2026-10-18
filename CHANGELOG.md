@@ -1,3 +1,14 @@
+## v2.0 — Câmera dinâmica e iluminação de cenário
+
+- Três câmeras alternáveis: Clássica, Esportiva e Cinemática.
+- Câmera acompanhando curvas com suavização independente de posição/olhar, sem acúmulo de roll.
+- Melhor enquadramento de quedas e expansão de campo de visão ao usar nitro.
+- Tecla C, R3 no gamepad e botão da interface para trocar câmera durante a corrida.
+- Iluminação por rota: temperaturas de cor costeira, deserto e montanhas com mudanças discretas ao longo da pista.
+- Modos de iluminação Dinâmica, Suave e Cinematográfica; reforço de luz somente em gráficos Alto e Ultra.
+- Iluminação dinâmica sem pós-processamento nem sombras adicionais; preservados perfis leves e ajuste automático de FPS.
+- Testes determinísticos novos para câmeras, interpolação, modos de iluminação e HTML.
+
 ## v1.9 — Visuais, modelos e desempenho (18/10/2026)
 
 - Detalhes distintos para Falcão, Tempestade, Víbora e Bulldog, sem alterar a física da garagem.

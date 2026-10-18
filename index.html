@@ -26,7 +26,7 @@
         <div class="meter-track"><div id="health-bar" class="meter-fill health"></div></div>
         <div class="meter-title meter-nitro"><span>NITRO <kbd>SHIFT</kbd></span><span id="nitro-label">100%</span></div>
         <div class="meter-track"><div id="nitro-bar" class="meter-fill nitro"></div></div>
-        <div id="police-status" class="police-status is-hidden"><span>🚨 POLÍCIA NA PISTA <b id="police-distance">--</b></span><div class="police-meter"><i id="wanted-fill"></i></div></div><div class="hud-actions"><button id="mute" class="mini-btn" type="button" aria-label="Ativar ou desativar áudio">♫</button><button id="pause" class="mini-btn" type="button" aria-label="Pausar jogo">Ⅱ</button></div>
+        <div id="police-status" class="police-status is-hidden"><span>🚨 POLÍCIA NA PISTA <b id="police-distance">--</b></span><div class="police-meter"><i id="wanted-fill"></i></div></div><div class="hud-actions"><button id="camera-toggle" class="mini-btn" type="button" aria-label="Alternar câmera" title="Alternar câmera (C / R3)">▣</button><button id="mute" class="mini-btn" type="button" aria-label="Ativar ou desativar áudio">♫</button><button id="pause" class="mini-btn" type="button" aria-label="Pausar jogo">Ⅱ</button></div>
       </div>
       <div class="hud-bottom"><div class="speed-wrap"><div class="speed-number"><span id="speed">0</span><small>KM/H</small></div><div class="speed-marks">0 — 120 — 240 — 300</div></div><div class="race-progress"><div class="progress-meta"><span>PARTIDA</span><strong id="distance">0 / 3.800 M</strong><span>CHEGADA</span></div><div class="progress-rail"><div id="progress-fill" class="progress-fill"></div><div id="progress-pin" class="progress-pin"></div></div></div><div class="tip" id="combat-tip">J / K · X / B <span>ARMA: <b id="weapon-hud">CORRENTE</b></span></div><div id="pad-indicator" class="pad-indicator" aria-live="polite">TECLADO</div><div class="perf-indicator"><span id="fps-value">--</span> FPS</div></div>
     </header>
@@ -39,11 +39,11 @@
 
     <section id="menu" class="overlay menu" aria-label="Menu principal">
       <div class="overlay-inner">
-        <div class="topline"><span class="wing">✦</span> ARCADE MOTO COMBAT · GRÁFICOS EVOLUÍDOS <span class="build-label">V 1.9</span></div>
+        <div class="topline"><span class="wing">✦</span> ARCADE MOTO COMBAT · GRÁFICOS EVOLUÍDOS <span class="build-label">V 2.0</span></div>
         <div class="hero-content"><div class="super-label">NÃO É SÓ UMA CORRIDA.</div><h1>ASFALTO<br/><span>BRUTAL</span><b class="title-slash">/</b></h1><p class="tagline">Acelere. Ultrapasse. Lute pelo primeiro lugar.<br/>Cada curva tem um rival. Cada segundo conta.</p></div>
         <div class="menu-panel"><div class="panel-title">ESCOLHA SUA ESTRADA <span>01 / 03</span></div>
           <div class="routes" id="routes"><button type="button" class="route selected" data-route="coast"><strong>01 <span>COSTA FANTASMA</span></strong><small>ASFALTO • MÉDIO</small></button><button type="button" class="route" data-route="desert"><strong>02 <span>ROTA DO DESERTO</span></strong><small>AREIA • RÁPIDO</small></button><button type="button" class="route" data-route="highlands"><strong>03 <span>SERRA DA FÚRIA</span></strong><small>MONTANHA • DIFÍCIL</small></button></div>
-          <div class="menu-settings"><label for="quality">GRÁFICOS <select id="quality"><option value="auto">AUTOMÁTICO</option><option value="low">LEVE</option><option value="medium">EQUILIBRADO</option><option value="high">ALTO</option><option value="ultra">ULTRA</option></select></label><label for="shadows">SOMBRAS <select id="shadows"><option value="auto">AUTOMÁTICAS</option><option value="off">DESLIGADAS</option><option value="on">LIGADAS</option></select></label><label class="sound-switch"><input id="sound" type="checkbox" checked /> SOM LIGADO</label></div>
+          <div class="menu-settings"><label for="quality">GRÁFICOS <select id="quality"><option value="auto">AUTOMÁTICO</option><option value="low">LEVE</option><option value="medium">EQUILIBRADO</option><option value="high">ALTO</option><option value="ultra">ULTRA</option></select></label><label for="shadows">SOMBRAS <select id="shadows"><option value="auto">AUTOMÁTICAS</option><option value="off">DESLIGADAS</option><option value="on">LIGADAS</option></select></label><label for="camera-mode">CÂMERA <select id="camera-mode"><option value="chase">CLÁSSICA</option><option value="sport">ESPORTIVA</option><option value="cinematic">CINEMÁTICA</option></select></label><label for="lighting">ILUMINAÇÃO <select id="lighting"><option value="auto">DINÂMICA</option><option value="soft">SUAVE</option><option value="cinematic">CINEMATOGRÁFICA</option></select></label><label class="sound-switch"><input id="sound" type="checkbox" checked /> SOM LIGADO</label></div>
           <section id="garage" class="garage-panel" aria-label="Garagem e compra de motos">
             <div class="garage-head"><strong>GARAGEM</strong><span>SEU SALDO: <b id="money">0</b> CR</span></div>
             <p class="garage-intro">MOTO EQUIPADA: <b id="garage-selected">FALCÃO 250</b> · Ganhe créditos nas corridas e monte sua coleção.</p>
@@ -62,7 +62,7 @@
           </section>
           <button type="button" id="play" class="primary-btn">INICIAR CORRIDA <span>↗</span></button>
         </div>
-        <div class="controls-summary"><span>W / ↑ <b>ACELERAR</b></span><span>A D / ← → <b>VIRAR</b></span><span>J / K <b>ATACAR</b></span><span>1–5 / Q E <b>TROCAR ARMA</b></span><span>SHIFT <b>NITRO</b></span><span>ESPAÇO <b>FREAR</b></span><span>🎮 <b>ANALÓGICO + GATILHOS</b></span><span>H <b>HITBOXES</b></span></div>
+        <div class="controls-summary"><span>W / ↑ <b>ACELERAR</b></span><span>A D / ← → <b>VIRAR</b></span><span>J / K <b>ATACAR</b></span><span>1–5 / Q E <b>TROCAR ARMA</b></span><span>SHIFT <b>NITRO</b></span><span>ESPAÇO <b>FREAR</b></span><span>🎮 <b>ANALÓGICO + GATILHOS</b></span><span>H <b>HITBOXES</b></span><span>C / R3 <b>CÂMERA</b></span></div>
         <div class="controller-hint">🎮 CONTROLE: analógico = direção · RT = acelerar · LT = frear · X/LB e B/RB = golpes · Y = nitro · direcional = trocar armas · Start = pausar. No menu: direcional escolhe, A inicia.</div>
         <div class="footer-sign">UM JOGO ARCADE ORIGINAL INSPIRADO NAS CORRIDAS DE MOTOS DOS ANOS 90</div>
       </div>
