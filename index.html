@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#070d18" />
+  <meta name="description" content="Asfalto Brutal: corrida e combate de motos em 3D, criado com Three.js." />
+  <title>ASFALTO BRUTAL — Moto Combat Racing</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
+</head>
+<body>
+  <main id="game" aria-label="Jogo de corrida de motos">
+    <canvas id="scene" aria-label="Pista e motocicletas em 3D"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="hit-flash" class="hit-flash" aria-hidden="true"></div>
+
+    <header id="hud" class="hud is-hidden">
+      <div class="hud-left">
+        <div class="eyebrow"><span class="pulse"></span> CORRIDA EM ANDAMENTO <span id="course-tag">COSTA FANTASMA</span></div>
+        <div class="race-stats"><div class="race-position"><strong id="place">7<span>º</span></strong><small>POSIÇÃO <em>/ 7</em></small></div><div class="race-time"><strong id="timer">00:00</strong><small>TEMPO</small></div></div>
+      </div>
+      <div class="hud-right">
+        <div class="meter-title"><span>INTEGRIDADE</span><span id="health-label">100%</span></div>
+        <div class="meter-track"><div id="health-bar" class="meter-fill health"></div></div>
+        <div class="meter-title meter-nitro"><span>NITRO <kbd>SHIFT</kbd></span><span id="nitro-label">100%</span></div>
+        <div class="meter-track"><div id="nitro-bar" class="meter-fill nitro"></div></div>
+        <div id="police-status" class="police-status is-hidden"><span>🚨 POLÍCIA NA PISTA <b id="police-distance">--</b></span><div class="police-meter"><i id="wanted-fill"></i></div></div><div class="hud-actions"><button id="mute" class="mini-btn" type="button" aria-label="Ativar ou desativar áudio">♫</button><button id="pause" class="mini-btn" type="button" aria-label="Pausar jogo">Ⅱ</button></div>
+      </div>
+      <div class="hud-bottom"><div class="speed-wrap"><div class="speed-number"><span id="speed">0</span><small>KM/H</small></div><div class="speed-marks">0 — 120 — 240 — 300</div></div><div class="race-progress"><div class="progress-meta"><span>PARTIDA</span><strong id="distance">0 / 3.800 M</strong><span>CHEGADA</span></div><div class="progress-rail"><div id="progress-fill" class="progress-fill"></div><div id="progress-pin" class="progress-pin"></div></div></div><div class="tip" id="combat-tip">J / K · X / B <span>ARMA: <b id="weapon-hud">CORRENTE</b></span></div><div id="pad-indicator" class="pad-indicator" aria-live="polite">TECLADO</div><div class="perf-indicator"><span id="fps-value">--</span> FPS</div></div>
+    </header>
+
+    <div id="speed-lines" class="speed-lines" aria-hidden="true"></div>
+    <div id="fall-banner" class="fall-banner hidden" aria-live="polite"><strong>VOCÊ CAIU!</strong><span>RECUPERANDO A MOTO...</span><div class="fall-progress"><i id="fall-progress"></i></div></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="countdown" class="countdown hidden" aria-live="assertive"></div>
+    <div id="loading" class="loading"><div class="loading-wheel"></div><span>PREPARANDO O ASFALTO...</span></div>
+
+    <section id="menu" class="overlay menu" aria-label="Menu principal">
+      <div class="overlay-inner">
+        <div class="topline"><span class="wing">✦</span> ARCADE MOTO COMBAT · DERRAPAGEM E ULTRAPASSAGEM <span class="build-label">V 1.7</span></div>
+        <div class="hero-content"><div class="super-label">NÃO É SÓ UMA CORRIDA.</div><h1>ASFALTO<br/><span>BRUTAL</span><b class="title-slash">/</b></h1><p class="tagline">Acelere. Ultrapasse. Lute pelo primeiro lugar.<br/>Cada curva tem um rival. Cada segundo conta.</p></div>
+        <div class="menu-panel"><div class="panel-title">ESCOLHA SUA ESTRADA <span>01 / 03</span></div>
+          <div class="routes" id="routes"><button type="button" class="route selected" data-route="coast"><strong>01 <span>COSTA FANTASMA</span></strong><small>ASFALTO • MÉDIO</small></button><button type="button" class="route" data-route="desert"><strong>02 <span>ROTA DO DESERTO</span></strong><small>AREIA • RÁPIDO</small></button><button type="button" class="route" data-route="highlands"><strong>03 <span>SERRA DA FÚRIA</span></strong><small>MONTANHA • DIFÍCIL</small></button></div>
+          <div class="menu-settings"><label for="quality">GRÁFICOS <select id="quality"><option value="auto">AUTOMÁTICO</option><option value="low">LEVE</option><option value="medium">EQUILIBRADO</option><option value="high">ALTO</option><option value="ultra">ULTRA</option></select></label><label class="sound-switch"><input id="sound" type="checkbox" checked /> SOM LIGADO</label></div>
+          <section id="garage" class="garage-panel" aria-label="Garagem e compra de motos">
+            <div class="garage-head"><strong>GARAGEM</strong><span>SEU SALDO: <b id="money">0</b> CR</span></div>
+            <p class="garage-intro">MOTO EQUIPADA: <b id="garage-selected">FALCÃO 250</b> · Ganhe créditos nas corridas e monte sua coleção.</p>
+            <div id="garage-bikes" class="garage-bikes"></div>
+          </section>
+          <section id="armory" class="armory-panel" aria-label="Seleção de armas de combate">
+            <div class="garage-head"><strong>ARMAS</strong><span>EQUIPADA: <b id="weapon-selected">CORRENTE</b></span></div>
+            <p class="garage-intro">Escolha a arma de combate. Cada uma muda o alcance e o impacto dos ataques laterais.</p>
+            <div id="weapon-list" class="weapon-list">
+              <button type="button" class="weapon-option selected" data-weapon="chain"><strong>1 · CORRENTE</strong><small>ALCANCE LONGO · DERRUBA MAIS</small></button>
+              <button type="button" class="weapon-option" data-weapon="club"><strong>2 · PORRETE</strong><small>DANO ALTO · GOLPE PESADO</small></button>
+              <button type="button" class="weapon-option" data-weapon="pipe"><strong>3 · CANO</strong><small>RÁPIDO · BOM EQUILÍBRIO</small></button>
+              <button type="button" class="weapon-option" data-weapon="machete"><strong>4 · FACÃO</strong><small>ALCANCE MÉDIO · ATAQUE PRECISO</small></button>
+              <button type="button" class="weapon-option" data-weapon="baton"><strong>5 · CASSETETE</strong><small>RECUPERAÇÃO RÁPIDA · CONTROLE</small></button>
+            </div>
+          </section>
+          <button type="button" id="play" class="primary-btn">INICIAR CORRIDA <span>↗</span></button>
+        </div>
+        <div class="controls-summary"><span>W / ↑ <b>ACELERAR</b></span><span>A D / ← → <b>VIRAR</b></span><span>J / K <b>ATACAR</b></span><span>1–5 / Q E <b>TROCAR ARMA</b></span><span>SHIFT <b>NITRO</b></span><span>ESPAÇO <b>FREAR</b></span><span>🎮 <b>ANALÓGICO + GATILHOS</b></span><span>H <b>HITBOXES</b></span></div>
+        <div class="controller-hint">🎮 CONTROLE: analógico = direção · RT = acelerar · LT = frear · X/LB e B/RB = golpes · Y = nitro · direcional = trocar armas · Start = pausar. No menu: direcional escolhe, A inicia.</div>
+        <div class="footer-sign">UM JOGO ARCADE ORIGINAL INSPIRADO NAS CORRIDAS DE MOTOS DOS ANOS 90</div>
+      </div>
+    </section>
+
+    <section id="pause-screen" class="overlay center-screen hidden" aria-label="Jogo pausado"><div class="end-panel"><div class="super-label">UM SEGUNDO, PILOTO</div><h2>PAUSADO<span>.</span></h2><p>A corrida continua quando você estiver pronto.</p><button id="resume" class="primary-btn">CONTINUAR <span>↗</span></button><button id="quit" class="secondary-btn">VOLTAR AO MENU</button></div></section>
+    <section id="finish-screen" class="overlay center-screen hidden" aria-label="Resultado da corrida"><div class="end-panel"><div class="super-label" id="finish-kicker">LINHA DE CHEGADA</div><h2 id="finish-headline">CORRIDA<br/><span>CONCLUÍDA.</span></h2><div class="results"><div><small>CLASSIFICAÇÃO</small><strong id="final-place">1º</strong></div><div><small>TEMPO FINAL</small><strong id="final-time">00:00</strong></div><div><small>RIVAIS DERRUBADOS</small><strong id="final-hits">0</strong></div><div><small>QUEDAS</small><strong id="final-falls">0</strong></div><div><small>FUGAS DA POLÍCIA</small><strong id="final-escapes">0</strong></div></div><div class="reward-box"><span>CRÉDITOS GANHOS</span><strong id="final-money">+ 0 CR</strong><small id="final-wallet">SALDO: 0 CR</small></div><button id="replay" class="primary-btn">CORRER DE NOVO <span>↗</span></button><button id="home" class="secondary-btn">ESCOLHER PISTA</button></div></section>
+
+    <div id="touch-controls" class="touch-controls is-hidden" aria-label="Controles de toque"><div class="touch-left"><button data-control="left" aria-label="Virar esquerda">◀</button><button data-control="right" aria-label="Virar direita">▶</button></div><div class="touch-right"><button data-control="hitLeft" class="action attack" aria-label="Golpear esquerda">GOLPE ◀</button><button data-control="hitRight" class="action attack" aria-label="Golpear direita">▶ GOLPE</button><button data-control="nitro" class="action boost" aria-label="Nitro">NITRO</button><button data-control="brake" class="action brake" aria-label="Frear">FREIO</button><button data-control="weaponNext" class="action weapon" aria-label="Trocar arma">ARMA ↻</button><button data-control="accelerate" class="action accelerate" aria-label="Acelerar">ACELERAR</button></div></div>
+    <div id="fatal" class="fatal hidden" role="alert"><strong>NÃO FOI POSSÍVEL INICIAR O 3D</strong><p>Verifique sua conexão com a internet e se o navegador permite WebGL. A biblioteca Three.js é carregada pelo CDN.</p><button onclick="location.reload()">TENTAR NOVAMENTE</button></div>
+  </main>
+  <script>window.addEventListener('error',e=>{if(e.message&&/module|import|webgl/i.test(e.message)){document.getElementById('fatal').classList.remove('hidden');}});setTimeout(()=>{if(!window.__asfaltoBooted){document.getElementById('loading').classList.add('hidden');document.getElementById('fatal').classList.remove('hidden');}},15000);</script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

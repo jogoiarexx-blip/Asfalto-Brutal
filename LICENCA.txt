@@ -1,0 +1,5 @@
+ASFALTO BRUTAL — código e assets originais criados para este projeto.
+Você pode modificar, adaptar, utilizar e publicar os arquivos autorais deste pacote.
+A biblioteca Three.js e seus arquivos de terceiros têm suas próprias licenças.
+Três.js é importado pelo CDN (licença MIT) e não é redistribuído neste arquivo.
+Este projeto não contém imagens, áudio, código nem outros assets de Road Rash.

@@ -1,0 +1,18 @@
+ASFALTO BRUTAL v1.7
+
+1. Extraia todo o conteúdo do ZIP.
+2. No Windows, abra INICIAR-JOGO.bat.
+3. Aguarde o navegador abrir localhost. Requer internet para carregar Three.js.
+
+TECLADO: W acelera; A/D viram; Espaço freia; J/K golpeiam;
+         1-5 trocam arma; Q/E avançam/voltam armas; Shift nitro;
+         P/Esc pausa; H exibe hitboxes.
+
+CONTROLE PADRÃO: analógico esquerdo vira; RT acelera; LT freia;
+                 X/LB ataca à esquerda; B/RB à direita; Y nitro;
+                 direcional troca arma; Start pausa;
+                 no menu A inicia, direcional escolhe pista/arma.
+
+Os modelos 3D são procedurais, sem dependências de GLB.
+
+NOVO v1.7: derrapagem com marcas de pneu, ultrapassagens, colisões entre rivais e polícia mais estável nas curvas.

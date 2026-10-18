@@ -1,0 +1,94 @@
+# ASFALTO BRUTAL v1.7 — Derrapagem e ultrapassagens
+
+A v1.7 continua diretamente sobre a v1.6, preservando motos, cinco armas, garagem, polícia, hitboxes, controles e publicação em GitHub Pages.
+
+## Destaques da v1.7
+
+- **IA de ultrapassagem:** o rival avalia o espaço na pista, escolhe uma faixa lateral e mantém sua decisão brevemente. A postura do piloto acompanha o deslocamento.
+- **Colisões entre rivais:** detecção contínua (swept SAT), separação de motos e redução de velocidade em impactos; menos atravessamentos durante as disputas.
+- **Derrapagem visual:** marcas dos dois pneus no asfalto ao frear e inclinar em velocidade, com buffer circular reaproveitado para rodar em hardware modesto.
+- **Polícia em curvas:** previsão de curva adiante, desaceleração progressiva e reposicionamento limitado à pista.
+- **Testes:** `tests/race-dynamics.test.mjs`, incluindo correção de atravessamento em um quadro e conservação de controles.
+
+A v1.7 mantém o Three.js via CDN, portanto a primeira execução requer internet. Os desenhos e colisões são aproximações arcade; não há simulação integral de suspensão ou corpos rígidos.
+
+# ASFALTO BRUTAL v1.6 — Pilotagem, colisões e defesa inteligente
+
+Jogo original inspirado em corridas arcade dos anos 90. Sem ROMs ou assets proprietários de Road Rash. Evolução incremental da v1.5, mantendo pistas, garagem, progressão, polícia e controles corrigidos.
+
+## Novidades da v1.6
+
+- **Pilotagem mais consistente:** suavização de direção, perda moderada de esterço em alta velocidade, aderência na terra, suspensão, inclinação e resposta à frenagem. A/D permanecem no sentido correto da tela.
+- **Colisões com impulso:** detecção contínua preservada, agora com resolução de contato dianteiro/lateral, ricochete leve, redução de velocidade proporcional ao choque e balanço da moto.
+- **IA defensiva:** adversários agressivos reconhecem a preparação do golpe e podem defender com os braços ou deslocar gradualmente a moto para longe do ataque. Inclui tempo de reação e cooldown, evitando invulnerabilidade permanente.
+- **Piloto mais detalhado:** capacete com pivô de cabeça, peças no traje, joelheiras, postura do tronco e pernas independentes nas curvas, golpes e bloqueios.
+- **Câmera e choques:** acompanhamento lateral, pequenas oscilações de suspensão e breve desaceleração cinematográfica nos impactos.
+- **Testes de regressão:** módulos puros `js/defense.js`, `js/contact-response.js` e `tests/handling-defense.test.mjs` para verificar reação dos rivais e comportamento de colisões.
+
+## Novidades da v1.5
+
+- Animação de braços com antecipação, extensão, recuperação, rotação do tronco e reação ao golpe. A direção do braço acompanha corretamente o lado da tela.
+- 5 armas: **corrente, porrete, cano, facão e cassetete**; alcance, intervalo entre ataques e dano próprios.
+- Corrente com **simulação visual Verlet simplificada** (elos articulados, gravidade, inércia, restrição de comprimento); versão Leve usa menos elos. A colisão do golpe ainda usa a hitbox arcade em vez de colisão individual de cada elo.
+- Rivais com armas diferentes; policiais motociclistas equipados com cassetete.
+- Anéis de impacto, faíscas, reforço de áudio, vibração em controles compatíveis e sacudida da câmera.
+- Tombos com ejeção do piloto, rotação e câmera de acidente, seguidos de recuperação protegida.
+- Suporte a controle padrão via Gamepad API inclusive no menu, além de mouse, teclado e comandos touchscreen.
+- Pequenos retoques nos modelos de motos (painéis e acabamentos extras).
+
+## Rodar no Windows
+
+Extraia o ZIP inteiro e clique em `INICIAR-JOGO.bat`. O arquivo inicia um servidor local e abre seu navegador. É um jogo web, não um executável nativo. O computador precisa de navegador com WebGL e conexão com a internet para carregar o Three.js pelo CDN. Alternativamente use `python -m http.server 8000` a partir da pasta do jogo, acessando http://localhost:8000.
+
+Para publicar no GitHub Pages, envie o conteúdo desta pasta na raiz do repositório; o arquivo inicial é `index.html`.
+
+## Teclado
+
+| Tecla | Ação |
+|---|---|
+| W ou ↑ | Acelerar |
+| Espaço, S ou ↓ | Frear |
+| A/D ou ←/→ | Esquerda/direita na tela |
+| J/K | Golpe para esquerda/direita |
+| 1/2/3/4/5 | Corrente/porrete/cano/facão/cassetete |
+| Q/E | Arma anterior/próxima |
+| Shift | Nitro |
+| P/Esc | Pausar |
+| H | Mostrar hitboxes |
+
+## Controle USB/Bluetooth (mapeamento padrão Xbox / Gamepad API)
+
+| Botão | Durante a corrida |
+|---|---|
+| Analógico esquerdo | Direção |
+| RT (R2) ou A | Acelerar |
+| LT (L2) | Frear |
+| X (quadrado) ou LB (L1) | Golpe para esquerda da tela |
+| B (círculo) ou RB (R1) | Golpe para direita da tela |
+| Y (triângulo) | Nitro |
+| Direcional ↑/← | Arma anterior |
+| Direcional ↓/→ | Próxima arma |
+| Start/Options | Pausar/continuar |
+
+**Nos menus:** direcional esquerda/direita seleciona a pista, cima/baixo seleciona a arma; A ou Start inicia/reinicia ou continua; B volta ao menu nas telas de pausa e resultado.
+
+A Gamepad API do navegador requer que o controle seja conectado e um botão seja pressionado. Alguns controles genéricos têm mapeamento diferente; vibração é opcional e depende do navegador/hardware.
+
+## Estrutura
+
+- `js/combat.js`: regras de armas e combate arcade, testáveis sem Three.js.
+- `js/rider-animation.js`: animação dos braços e do corpo.
+- `js/vehicles.js`: modelos procedurais, rig e corrente de elos.
+- `js/crash-anim.js`: pose de acidente.
+- `js/input.js`: teclado, toque, gamepad e vibração.
+- `js/contact-response.js`: resolução arcade de impacto, velocidade e impulso lateral.
+- `js/defense.js`: decisão de bloqueio/esquiva com tempo de reação.
+- `js/physics.js`: pilotagem e aderência determinísticas.
+- `js/game.js`: integração da corrida, IA, câmera, colisões e HUD.
+- `tests/`: testes determinísticos e de integridade.
+
+## Testes e limites
+
+`npm test` executa testes de lógica e integridade de arquivos (Node.js 22+). A sintaxe dos arquivos também é verificada com `node --check`.
+
+O impacto é uma simulação arcade determinística, não um motor completo de corpos rígidos. A corrente tem física **visual**. Esta versão não contém áudio gravado/voz nem malhas GLB. A renderização e a taxa de quadros em diferentes GPUs precisam ser conferidas no hardware do jogador.
