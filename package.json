@@ -1,11 +1,11 @@
 {
   "name": "asfalto-brutal",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "private": true,
   "description": "Jogo Three.js de corrida e combate de motocicletas com polícia, garagem e armas corpo a corpo.",
   "scripts": {
-    "test": "node tests/logic.test.mjs && node tests/input.test.mjs && node tests/encounters.test.mjs && node tests/progression.test.mjs && node tests/integrity.test.mjs && node tests/combat-v15.test.mjs && node tests/handling-defense.test.mjs && node tests/race-dynamics.test.mjs && node tests/traffic-v18.test.mjs",
+    "test": "node tests/logic.test.mjs && node tests/input.test.mjs && node tests/encounters.test.mjs && node tests/progression.test.mjs && node tests/integrity.test.mjs && node tests/combat-v15.test.mjs && node tests/handling-defense.test.mjs && node tests/race-dynamics.test.mjs && node tests/traffic-v18.test.mjs && node tests/graphics-v19.test.mjs",
     "start": "python -m http.server 8000"
   }
 }

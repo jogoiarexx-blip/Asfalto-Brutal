@@ -1,4 +1,4 @@
-ASFALTO BRUTAL v1.8
+ASFALTO BRUTAL v1.9
 
 1. Extraia todo o conteúdo do ZIP.
 2. No Windows, abra INICIAR-JOGO.bat.
@@ -18,3 +18,5 @@ Os modelos 3D são procedurais, sem dependências de GLB.
 NOVO v1.7: derrapagem com marcas de pneu, ultrapassagens, colisões entre rivais e polícia mais estável nas curvas.
 
 NOVO v1.8: 6 personalidades de rivais, trânsito que muda de faixa e freia, derrapagem com perda de aderência e mais detalhes visuais nas pistas.
+
+NOVO v1.9: novos carros e motos, cenários arquitetônicos e configurações de sombras e renderização.

@@ -19,6 +19,7 @@ import {SkidMarks} from './skid-marks.js';
 import {rivalStyle,rivalPace,rivalAttackCooldown,rivalLaneRate} from './rival-styles.js';
 import {planTraffic} from './traffic-ai.js';
 import {separateNpcPair} from './npc-contact.js';
+import {graphicsProfile,automaticQuality} from './graphics-quality.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -32,20 +33,22 @@ export class Game{
   this.canvas=$('scene');this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(70,1,.1,580);
   this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'high-performance',alpha:false});
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.21;
-  this.renderer.shadowMap.enabled=false;
-  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.mode='menu';
+  this.renderer.shadowMap.enabled=false;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.mode='menu';
   this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
-  this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;
+  this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
   this.bindUI();this.renderGarage();this.buildTrack();this.resize();
   addEventListener('resize',()=>this.resize());this.renderer.setAnimationLoop(t=>this.frameLoop(t));
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&this.mode==='race')this.pause()});
   $('loading').classList.add('hidden');window.__asfaltoBooted=true;
  }
- get resolvedQuality(){return this.quality==='auto'?((navigator.hardwareConcurrency||4)<=4||innerWidth<800?'low':'high'):this.quality}
+ get resolvedQuality(){return this.quality==='auto'?automaticQuality({cores:navigator.hardwareConcurrency||4,width:innerWidth,height:innerHeight,reducedMotion:!!matchMedia?.('(prefers-reduced-motion: reduce)').matches}):this.quality}
+ get renderProfile(){return graphicsProfile(this.resolvedQuality,{cores:navigator.hardwareConcurrency||4,width:innerWidth,height:innerHeight,devicePixelRatio:devicePixelRatio||1,autoScale:this.quality==='auto'?this.autoScale:1,shadows:this.shadows})}
+ configureShadows(vehicle){if(!this.renderProfile.shadows)return;let count=0;vehicle.group.traverse(o=>{if(o.isMesh&&!o.material?.transparent&&o.material?.type!=='MeshBasicMaterial'&&count<10){o.castShadow=true;count++}})}
  buildTrack(){
-  this.removeTrack();this.world=new RoadWorld(this.scene,this.route,this.resolvedQuality);this.skidMarks=new SkidMarks(this.scene,this.resolvedQuality);
-  this.playerBike=createBike(chosenBike(this.garage).color,{player:true,quality:this.resolvedQuality});setBikeWeapon(this.playerBike,this.selectedWeapon);this.scene.add(this.playerBike.group);
+  this.removeTrack();this.automaticShadowDrop=false;const profile=this.renderProfile;this.renderer.shadowMap.enabled=profile.shadows;this.world=new RoadWorld(this.scene,this.route,this.resolvedQuality,profile);this.skidMarks=new SkidMarks(this.scene,this.resolvedQuality);
+  this.playerBike=createBike(chosenBike(this.garage).color,{player:true,quality:this.resolvedQuality,model:this.garage.selected});this.configureShadows(this.playerBike);setBikeWeapon(this.playerBike,this.selectedWeapon);this.scene.add(this.playerBike.group);
   this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
   this.playerBike.group.position.set(this.player.x,0,0);this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
   this.camera.position.set(this.player.x+1.6,5.2,-13.5);this.camera.lookAt(this.player.x,1.7,24);this.world.update(0);
@@ -66,13 +69,13 @@ export class Game{
  toggleHull(){this.debugBoxes=!this.debugBoxes;for(const vehicle of [this.playerBike,...this.rivals.map(e=>e.vehicle),...this.traffic.map(e=>e.vehicle),this.police?.vehicle])if(vehicle?.debugHull)vehicle.debugHull.visible=this.debugBoxes;this.notify(this.debugBoxes?'HITBOXES VISÍVEIS (H)':'HITBOXES OCULTAS (H)')}
  populate(){
   for(let i=0;i<6;i++){
-   const vehicle=createBike(rivalsColors[i],{quality:this.resolvedQuality});setBikeWeapon(vehicle,weaponForRival(i));this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.bike,0xffbd4e);
+   const vehicle=createBike(rivalsColors[i],{quality:this.resolvedQuality,model:['street','storm','viper','bulldog'][i%4]});this.configureShadows(vehicle);setBikeWeapon(vehicle,weaponForRival(i));this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.bike,0xffbd4e);
    const style=rivalStyle(i);
    const a={style,vehicle,z:48+i*17,x:0,baseLane:(i%3)-1,laneOffset:(i%3-1)*3.35,speed:nextRacerSpeed(i,this.route),health:2,phase:i*.8,knock:0,knockPower:0,stunTimer:0,attackCD:rand(3,6),attackAge:Infinity,attackSide:0,weaponId:weaponForRival(i),fallen:0,fallSide:0,aggression:aggressionOf(i)*(.80+style.bravery*.32),laneAim:0,guardTimer:0,dodgeTimer:0,dodgeTarget:0,defenseCD:0,defenseAttackId:0,passTimer:0,passOffset:null,contactRoll:0};
    a.x=curveAt(a.z,this.route)+a.laneOffset;a.yaw=headingAt(a.z,this.route);this.rivals.push(a);vehicle.group.position.set(a.x,0,a.z);
   }
   for(let i=0;i<11;i++){
-   const vehicle=createCar(carColors[i%carColors.length],{quality:this.resolvedQuality});this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.car,0x58d9ff);
+   const vehicle=createCar(carColors[i%carColors.length],{quality:this.resolvedQuality,style:['sedan','van','pickup','sport','sedan','wagon'][i%6]});this.configureShadows(vehicle);this.scene.add(vehicle.group);this.addHull(vehicle,HULLS.car,0x58d9ff);
    const cruiseSpeed=rand(19,33);
    const a={vehicle,z:155+i*160+rand(-30,50),x:0,lane:[-1,0,1][i%3],targetLane:[-1,0,1][i%3],laneOffset:0,speed:cruiseSpeed,cruiseSpeed,phase:rand(0,7),changeCD:rand(.4,2.1)};
    a.laneOffset=a.lane*3.95;a.x=curveAt(a.z,this.route)+a.laneOffset;a.yaw=headingAt(a.z,this.route);this.traffic.push(a);vehicle.group.position.set(a.x,0,a.z);
@@ -87,6 +90,7 @@ export class Game{
  bindUI(){
   document.querySelectorAll('.route').forEach(btn=>btn.addEventListener('click',()=>{if(this.mode!=='menu')return;this.route=btn.dataset.route;document.querySelectorAll('.route').forEach(b=>b.classList.toggle('selected',b===btn));this.buildTrack()}));
   $('quality').addEventListener('change',e=>{this.quality=e.target.value;this.resize();if(this.mode==='menu')this.buildTrack()});
+  $('shadows').addEventListener('change',e=>{this.shadows=e.target.value;if(this.mode==='menu')this.buildTrack()});
   $('sound').addEventListener('change',e=>{this.audio.enabled=e.target.checked;if(e.target.checked)this.audio.start()});
   $('play').addEventListener('click',()=>this.start());$('pause').addEventListener('click',()=>this.pause());$('resume').addEventListener('click',()=>this.resume());
   $('quit').addEventListener('click',()=>this.home());$('replay').addEventListener('click',()=>this.start());$('home').addEventListener('click',()=>this.home());
@@ -120,7 +124,7 @@ export class Game{
   if(announce)this.notify(`${this.weapon.name} EQUIPADA!`);
   return true;
  }
- resize(){const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();const limit={low:1,medium:1.2,high:1.65,ultra:2}[this.resolvedQuality]||1.65;const dpr=Math.min(devicePixelRatio,limit)*(this.quality==='auto'?this.autoScale:1);this.renderer.setPixelRatio(dpr);this.renderer.setSize(w,h,false)}
+ resize(){const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setPixelRatio(this.renderProfile.pixelRatio);this.renderer.setSize(w,h,false)}
  start(){
   this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
@@ -407,7 +411,7 @@ export class Game{
  spawnPolice(){
   if(this.police)return;
   const isMoto=(this.policePatrolCount++%2===0);
-  const vehicle=isMoto?createPoliceBike({quality:this.resolvedQuality}):createPoliceCar({quality:this.resolvedQuality});this.scene.add(vehicle.group);this.addHull(vehicle,isMoto?HULLS.bike:HULLS.car,0xff345f);
+  const vehicle=isMoto?createPoliceBike({quality:this.resolvedQuality}):createPoliceCar({quality:this.resolvedQuality});this.configureShadows(vehicle);this.scene.add(vehicle.group);this.addHull(vehicle,isMoto?HULLS.bike:HULLS.car,0xff345f);
   const z=this.player.z-54,laneOffset=clamp((this.player.x-curveAt(this.player.z,this.route))+3.1,-4.9,4.9);
   const e={vehicle,z,x:curveAt(z,this.route)+laneOffset,yaw:headingAt(z,this.route),speed:Math.max(38,this.player.speed*.86),laneOffset,phase:0,attackAge:Infinity,attackSide:0,weaponId:'baton'};if(isMoto)setBikeWeapon(vehicle,'baton');
   e.old={x:e.x,z:e.z,yaw:e.yaw};vehicle.group.position.set(e.x,0,z);this.police=e;this.policeLost=0;
@@ -522,6 +526,11 @@ export class Game{
      if(fps<43&&this.autoScale>.67)this.autoScale=Math.max(.67,this.autoScale-.1);
      else if(fps>57&&this.autoScale<1)this.autoScale=Math.min(1,this.autoScale+.055);
      if(previous!==this.autoScale)this.resize();
+     // Automatic quality can drop shadow rendering if the GPU cannot sustain racing FPS.
+     if(fps<35&&this.shadows==='auto'&&this.renderer.shadowMap.enabled&&!this.automaticShadowDrop){
+      this.renderer.shadowMap.enabled=false;this.automaticShadowDrop=true;
+      this.notify('MODO AUTOMÁTICO: SOMBRAS DESATIVADAS PARA AUMENTAR FPS');
+     }
     }
     this.fpsTime=0;this.fpsFrames=0;
    }

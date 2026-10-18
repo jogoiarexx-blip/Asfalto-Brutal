@@ -71,3 +71,7 @@
 .pad-indicator{font:800 12px 'Barlow Condensed',Impact,sans-serif;color:#eeffc1;background:#081524ba;padding:9px 10px;margin-bottom:18px;border-left:2px solid #dfff54;white-space:nowrap}
 .controller-hint{font:700 12px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.4px;color:#bbd6df;padding:9px 0;line-height:1.5}
 @media(max-width:800px){.pad-indicator{display:none}.controller-hint{font-size:11px}}
+
+/* v1.9: adjust graphical controls to three columns without clipping. */
+.menu-settings{flex-wrap:wrap;gap:10px 20px}.menu-settings label{white-space:nowrap}.menu-settings select{max-width:190px}
+@media(max-width:550px){.menu-settings{gap:8px 12px}.menu-settings label{font-size:10px}.menu-settings select{max-width:140px}}

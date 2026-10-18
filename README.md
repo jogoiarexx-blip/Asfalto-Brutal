@@ -1,4 +1,4 @@
-# ASFALTO BRUTAL v1.8 — Tráfego, IA e aderência
+# ASFALTO BRUTAL v1.9 — Tráfego, IA e aderência
 
 Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
 
@@ -121,3 +121,11 @@ A Gamepad API do navegador requer que o controle seja conectado e um botão seja
 `npm test` executa testes de lógica e integridade de arquivos (Node.js 22+). A sintaxe dos arquivos também é verificada com `node --check`.
 
 O impacto é uma simulação arcade determinística, não um motor completo de corpos rígidos. A corrente tem física **visual**. Esta versão não contém áudio gravado/voz nem malhas GLB. A renderização e a taxa de quadros em diferentes GPUs precisam ser conferidas no hardware do jogador.
+
+## Novidades da v1.9
+
+- Motos com detalhes individuais por modelo da garagem.
+- Trânsito com sedãs, vans, caminhonetes, peruas e carros esportivos, mantendo a mesma física e footprint de colisão.
+- Estruturas e iluminação visual à beira da pista; passagens elevadas na costa/deserto e túneis cenográficos nas serras. Os obstáculos visuais não possuem colisão adicional.
+- Gráficos configuráveis com novos perfis. As sombras reais são limitadas a Alto/Ultra por padrão; podem ser forçadas no menu e são desativadas automaticamente quando o FPS cai em qualidade Automática.
+- Three.js continua sendo carregado por CDN (conexão de internet necessária). Execute a partir de `INICIAR-JOGO.bat` ou de um servidor HTTP.

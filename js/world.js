@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,curveAt,headingAt} from './config.js';
+import {buildRoadsideArchitecture} from './roadside-architecture.js';
 const UP=new THREE.Vector3(0,1,0);const MATRIX=new THREE.Matrix4();const Q=new THREE.Quaternion();const V=new THREE.Vector3();const S=new THREE.Vector3();
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}}
 function ribbon(route,from,to,height,step,material){const verts=[],indices=[],uvs=[];for(let z=-120;z<=RACE_LENGTH+320;z+=8){const x=curveAt(z,route);verts.push(x+from,height,z,x+to,height,z);uvs.push(0,z/16,1,z/16);if(verts.length>6){const i=verts.length/3-4;indices.push(i,i+2,i+1,i+1,i+2,i+3)}}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();return new THREE.Mesh(geo,material)}
@@ -24,14 +25,15 @@ function skyTexture(config,route){
  ctx.fillStyle=grad;ctx.fillRect(0,0,8,256);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
 }
 export class RoadWorld{
- constructor(scene,route='coast',quality='high') {this.scene=scene;this.route=route;this.quality=quality;this.children=[];this.lights=[];this.build()}
+ constructor(scene,route='coast',quality='high',profile={shadows:false,shadowMapSize:0}) {this.scene=scene;this.route=route;this.quality=quality;this.profile=profile;this.children=[];this.lights=[];this.build()}
  add(o){this.scene.add(o);this.children.push(o);return o}
  build(){const route=this.route,config=ROUTES[route];this.sky=skyTexture(config,route);this.scene.background=this.sky;this.scene.fog=new THREE.Fog(config.fog,config.fogNear,config.fogFar);
-  this.add(new THREE.HemisphereLight(0xddeaf7,config.ground,1.7));const sun=new THREE.DirectionalLight(config.light,2.15);sun.position.set(-35,110,60);this.add(sun);
+  this.add(new THREE.HemisphereLight(0xddeaf7,config.ground,1.7));const sun=new THREE.DirectionalLight(config.light,2.15);sun.position.set(-35,110,60);this.add(sun);this.sun=sun;
+  if(this.profile.shadows){sun.castShadow=true;const shadow=sun.shadow;shadow.mapSize.set(this.profile.shadowMapSize,this.profile.shadowMapSize);shadow.camera.left=-35;shadow.camera.right=35;shadow.camera.top=35;shadow.camera.bottom=-35;shadow.camera.near=1;shadow.camera.far=220;shadow.bias=-.0002;shadow.normalBias=.035;this.add(sun.target)}
   const ground=this.add(new THREE.Mesh(new THREE.PlaneGeometry(1250,RACE_LENGTH+1500),mat(config.ground)));ground.rotation.x=-Math.PI/2;ground.position.set(0,-.24,RACE_LENGTH/2);
   if(route==='coast'){const sea=this.add(new THREE.Mesh(new THREE.PlaneGeometry(390,RACE_LENGTH+1500),new THREE.MeshLambertMaterial({color:0x4485a1,emissive:0x183b56,emissiveIntensity:.3})));sea.rotation.x=-Math.PI/2;sea.position.set(-350,-.18,RACE_LENGTH/2)}
   const roadMat=new THREE.MeshStandardMaterial({color:config.road,map:asphaltTexture(this.quality==='low'),roughness:.96});const ribbons=[[-ROAD_HALF-.86,ROAD_HALF+.86,.005,mat(config.shoulder)],[-ROAD_HALF,ROAD_HALF,.026,roadMat],[-ROAD_HALF,-ROAD_HALF+.13,.032,new THREE.MeshBasicMaterial({color:0xefeee8})],[ROAD_HALF-.13,ROAD_HALF,.032,new THREE.MeshBasicMaterial({color:0xefeee8})]];
-  for(const [a,b,h,m] of ribbons)this.add(ribbon(route,a,b,h,8,m));
+  for(const [a,b,h,m] of ribbons){const roadPiece=ribbon(route,a,b,h,8,m);roadPiece.receiveShadow=this.profile.shadows;this.add(roadPiece)}
   // Painted rumble strips, patched asphalt and periodic cat's-eye reflectors.
   const rumbleCount=Math.floor((RACE_LENGTH+160)/6)*2;
   const rumble=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.64,.025,2.55),new THREE.MeshBasicMaterial({color:config.edge}),rumbleCount));
@@ -66,7 +68,7 @@ export class RoadWorld{
   const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,1,1,1,headingAt(z,route));rail.instanceMatrix.needsUpdate=true;
   const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z);posts.instanceMatrix.needsUpdate=true;
   for(let z=260;z<RACE_LENGTH;z+=490){this.createSign(z,config,route)}
-  this.createFinish(route);this.createRoadsideDetail(random);
+  this.createFinish(route);this.createRoadsideDetail(random);this.architecture=buildRoadsideArchitecture(this);
   const sunBall=this.add(new THREE.Mesh(new THREE.SphereGeometry(20,16,8),new THREE.MeshBasicMaterial({color:route==='desert'?0xffd69b:0xffeac5,fog:false})));sunBall.position.set(-150,110,230);this.sunBall=sunBall;
  }
  /** Geometry is batched with InstancedMesh: extra landmarks without extra draw calls per item. */
@@ -124,6 +126,6 @@ export class RoadWorld{
   grid.position.set(curveAt(finishZ,route),0,finishZ);grid.rotation.y=headingAt(finishZ,route);this.add(grid);group.position.set(curveAt(finishZ,route),0,finishZ);group.rotation.y=headingAt(finishZ,route);this.add(group);
  }
  createSign(z,config,route){const g=new THREE.Group(),sign=new THREE.Mesh(new THREE.BoxGeometry(6.8,2.5,.24),new THREE.MeshLambertMaterial({color:0x162837,emissive:0x12262a}));sign.position.y=6.2;g.add(sign);const canvas=document.createElement('canvas');canvas.width=512;canvas.height=190;const ctx=canvas.getContext('2d');ctx.fillStyle='#091923';ctx.fillRect(0,0,512,190);ctx.fillStyle='#ddff50';ctx.font='900 62px Impact, sans-serif';ctx.fillText('ASFALTO',24,78);ctx.fillStyle='#f6f9f3';ctx.font='900 67px Impact, sans-serif';ctx.fillText('BRUTAL  ↗',24,151);const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const poster=new THREE.Mesh(new THREE.PlaneGeometry(6.65,2.4),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));poster.position.set(0,6.2,.15);g.add(poster);const post=new THREE.Mesh(new THREE.BoxGeometry(.22,6,.25),mat(0x7f9098));post.position.set(0,2.95,0);g.add(post);g.position.set(curveAt(z,route)+11.4,0,z);g.rotation.y=headingAt(z,route);this.add(g)}
- update(z){if(this.sunBall)this.sunBall.position.z=z+260}
- dispose(){for(const obj of this.children){this.scene.remove(obj);obj.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(m.map)m.map.dispose();m.dispose()}}})}this.children.length=0;this.scene.fog=null;this.scene.background=null;if(this.sky){this.sky.dispose();this.sky=null}}
+ update(z){if(this.sunBall)this.sunBall.position.z=z+260;if(this.profile.shadows&&this.sun){const x=curveAt(z,this.route);this.sun.position.set(x-35,110,z+60);this.sun.target.position.set(x,0,z+13);this.sun.target.updateMatrixWorld()}}
+ dispose(){for(const obj of this.children){this.scene.remove(obj);obj.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(m.map)m.map.dispose();m.dispose()}}})}this.children.length=0;this.scene.fog=null;this.scene.background=null;if(this.sun?.shadow?.dispose)this.sun.shadow.dispose();if(this.sky){this.sky.dispose();this.sky=null}}
 }

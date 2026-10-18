@@ -1,3 +1,12 @@
+## v1.9 — Visuais, modelos e desempenho (18/10/2026)
+
+- Detalhes distintos para Falcão, Tempestade, Víbora e Bulldog, sem alterar a física da garagem.
+- Tráfego com sedãs, vans, caminhonetes, peruas e esportivos preservando as hitboxes antigas.
+- Construções, janelas, pórticos e túneis visuais nos três cenários; geometrias instanciadas e distantes da pista.
+- Perfis gráficos Leve, Equilibrado, Alto e Ultra, com escolha Automática baseada em hardware e resolução.
+- Sombras dinâmicas configuráveis, seletivas em veículos e desativadas automaticamente quando FPS cai em modo Automático.
+- Testes extras dos perfis gráficos e posições dos cenários; preservados testes das versões anteriores.
+
 ## v1.8 — Personalidades, tráfego e tração dinâmica (18/10/2026)
 
 - Estilos de pilotagem distintos: cauteloso, velocista, briguento, técnico, imprudente, estrategista.

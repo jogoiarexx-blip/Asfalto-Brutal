@@ -95,7 +95,7 @@ function armRig(parent,side,jacket,glove,low,dark,metal){
  return {shoulder,upperArm,elbow,forearmPivot,forearm,fist,weaponPivot,weaponSets,
   updateChain(dt,power){weaponSets.chain.update(dt,power)}};
 }
-export function createBike(color=0xff5a4e,{player=false,quality='high'}={}){
+export function createBike(color=0xff5a4e,{player=false,quality='high',model='street'}={}){
  const low=quality==='low',root=new THREE.Group(),lean=new THREE.Group();root.add(lean);
  const body=material(color,.55,.31),dark=material(0x14191c,.12,.85),chrome=material(0xb6c8cf,.78,.24),rubber=material(0x080d11,.03,.95),paint2=material(0x151f2b,.23,.43);
  const accent=material(player?0xddff50:0xf5f8fb,.34,.48),helmet=material(player?0xddff50:color,.42,.32),jacket=material(player?0x24465a:0x27323e,.11,.84),glove=material(0x11161d,.14,.74),glass=material(0x162f3c,.36,.18),white=material(0xe6f1ef,.12,.4);
@@ -133,6 +133,17 @@ export function createBike(color=0xff5a4e,{player=false,quality='high'}={}){
   }
   box(lean,[.43,.09,.42],glass,[0,1.48,.52],[-.3,0,0]);
   box(lean,[.57,.04,.35],accent,[0,1.31,-1.12]);
+ }
+ // Garage model-specific details preserve the same physics footprint.
+ if(model==='storm'){
+  box(lean,[.54,.18,.26],glass,[0,1.75,1.07],[-.31,0,0]);
+  for(const side of [-1,1])box(lean,[.15,.15,.52],accent,[side*.39,1.19,.48]);
+ }else if(model==='viper'){
+  for(const side of [-1,1]){box(lean,[.16,.10,.48],accent,[side*.39,1.33,.86],[0,0,side*.16]);box(lean,[.20,.09,.24],dark,[side*.48,1.13,-.91]);}
+  box(lean,[.40,.05,.95],accent,[0,1.54,-.13]);
+ }else if(model==='bulldog'){
+  for(const side of [-1,1]){part(lean,new THREE.CylinderGeometry(.09,.09,.63,low?6:10),chrome,[side*.45,.80,-1.20],[Math.PI/2,0,0]);box(lean,[.16,.28,.45],dark,[side*.37,1.28,-.70]);}
+  box(lean,[.60,.12,.50],chrome,[0,1.38,-1.02]);
  }
  const brakeLight=part(lean,new THREE.BoxGeometry(.35,.085,.035),rearMat,[0,1.28,-1.48]);
  part(lean,new THREE.CylinderGeometry(.08,.08,.95,low?5:8),chrome,[-.31,.83,-1.65],[Math.PI/2,0,0]);
@@ -177,7 +188,7 @@ export function createBike(color=0xff5a4e,{player=false,quality='high'}={}){
  const shadow=part(root,new THREE.CircleGeometry(1.08,18),new THREE.MeshBasicMaterial({color:0x02070c,transparent:true,opacity:.27,depthWrite:false}),[0,.035,0],[-Math.PI/2,0,0]);shadow.scale.set(.78,1.76,1);
  return {kind:'bike',group:root,lean,rider,headRig,kickLeft,kickRight,wheels,brakeLight,boostFx,shadow,armLeft,armRight,weaponType:'chain'};
 }
-export function createCar(color=0x4aa4bb,{quality='high'}={}){
+export function createCar(color=0x4aa4bb,{quality='high',style='sedan'}={}){
  const low=quality==='low',root=new THREE.Group(),paint=material(color,.59,.36),glass=material(0x122936,.19,.16),rubber=material(0x101215),chrome=material(0x9faeb4,.74,.29);
  const lamp=new THREE.MeshStandardMaterial({color:0xffe6ae,emissive:0xffcc81,emissiveIntensity:1.15}),rear=new THREE.MeshStandardMaterial({color:0xff3434,emissive:0xd51e20,emissiveIntensity:1.1});
  box(root,[2.04,.66,3.76],paint,[0,.85,0]);box(root,[1.66,.69,2],paint,[0,1.37,-.2]);
@@ -188,7 +199,28 @@ export function createCar(color=0x4aa4bb,{quality='high'}={}){
  box(root,[2.1,.14,.17],chrome,[0,.6,1.9]);box(root,[2.1,.14,.17],chrome,[0,.6,-1.9]);
  for(const x of [-.7,.7]){box(root,[.42,.20,.06],lamp,[x,.9,1.91]);box(root,[.38,.16,.06],rear,[x,.9,-1.91]);}
  box(root,[.78,.24,.04],glass,[0,.86,1.94]);
- return {kind:'car',group:root,lean:root,wheels};
+ // Distinct silhouettes but all remain inside the v1.8 car collision footprint.
+ if(style==='van'){
+  box(root,[1.73,.67,2.78],paint,[0,1.58,-.23]);
+  box(root,[1.54,.34,.065],glass,[0,1.65,1.19],[-.18,0,0]);
+  for(const side of [-1,1])box(root,[.05,.36,.78],glass,[side*.875,1.60,.08]);
+  box(root,[1.60,.24,.08],chrome,[0,1.55,-1.71]);
+ }else if(style==='pickup'){
+  box(root,[1.72,.47,.96],paint,[0,1.45,.56]);
+  box(root,[1.67,.14,1.45],rubber,[0,1.22,-1.04]);
+  for(const side of [-1,1])box(root,[.10,.33,1.15],paint,[side*.87,1.32,-1.01]);
+  box(root,[1.7,.32,.10],paint,[0,1.32,-1.76]);
+ }else if(style==='sport'){
+  box(root,[1.88,.16,.42],paint,[0,1.32,-1.53]);
+  box(root,[1.65,.09,.43],chrome,[0,1.54,-1.63]);
+  for(const side of [-1,1])box(root,[.12,.10,.36],chrome,[side*.82,.76,1.70]);
+ }else if(style==='wagon'){
+  box(root,[1.72,.36,2.62],paint,[0,1.55,-.34]);
+  for(const side of [-1,1])box(root,[.08,.08,2.35],chrome,[side*.68,1.82,-.32]);
+  box(root,[1.54,.20,.08],glass,[0,1.55,-1.68]);
+ }
+ if(!low){for(const side of [-1,1])box(root,[.08,.04,2.65],chrome,[side*.98,.97,-.12]);}
+ return {kind:'car',group:root,lean:root,wheels,style};
 }
 export function createPoliceCar({quality='high'}={}) {
  const vehicle=createCar(0xe3e9ee,{quality});const body=new THREE.MeshStandardMaterial({color:0x1b334a,metalness:.48,roughness:.44});
