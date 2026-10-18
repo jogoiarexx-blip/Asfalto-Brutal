@@ -1,3 +1,10 @@
+## v2.0.2 — Compatibilidade de sombras com Three.js r186
+
+- Substituído `THREE.PCFSoftShadowMap` (removido do WebGLRenderer) por `THREE.PCFShadowMap`.
+- Preservados os perfis automáticos de sombra e os ajustes de desempenho.
+- Mantidos os reparos de visibilidade da moto do jogador da v2.0.1.
+- Incluído teste automatizado de compatibilidade do modo de sombra, prevenindo regressão.
+
 ## v2.0.1 — Correção de visibilidade da moto do jogador
 
 - Garante que a geometria principal da moto e do piloto permanece visível (a sombra é um objeto separado).

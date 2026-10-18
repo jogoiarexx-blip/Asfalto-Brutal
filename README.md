@@ -1,6 +1,12 @@
-# ASFALTO BRUTAL v2.0.1 — Tráfego, IA e aderência
+# ASFALTO BRUTAL v2.0.2 — Tráfego, IA e aderência
 
 Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
+
+## Hotfix de sombras v2.0.2
+
+- Compatível com Three.js 0.186.1: usa `PCFShadowMap` em lugar de `PCFSoftShadowMap` removido.
+- A mensagem no console era um aviso de compatibilidade, não um erro fatal.
+- Correção de visibilidade da moto da versão 2.0.1 preservada.
 
 ## Novidades verificadas
 
