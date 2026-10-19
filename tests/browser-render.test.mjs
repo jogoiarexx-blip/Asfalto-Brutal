@@ -40,19 +40,27 @@ try{
      if(Math.abs(cubePixels[i]-after[i])+Math.abs(cubePixels[i+1]-after[i+1])+Math.abs(cubePixels[i+2]-after[i+2])>30)cubeChanged++;
    }
    const oldColor=r.getClearColor(new three.Color()).clone(),oldAlpha=r.getClearAlpha();
-   r.setClearColor(0xff00ff,1);
+   r.setClearColor(0x00ff00,1);
    r.clear(true,true,true);const blank=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,blank);
    game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
    const bikeIsolated=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,bikeIsolated);
+   const marker=new three.Mesh(new three.BoxGeometry(1.8,1.8,1.8),new three.MeshBasicMaterial({color:0xff0000,depthTest:false,depthWrite:false,side:three.DoubleSide}));
+   marker.position.set(0,1.25,0);marker.frustumCulled=false;marker.renderOrder=999;
+   game.playerBike.group.add(marker);
+   r.clear(true,true,true);game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
+   const markerPixels=new Uint8Array(w*h*4);
+   gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,markerPixels);
+   game.playerBike.group.remove(marker);marker.geometry.dispose();marker.material.dispose();
    r.clear(true,true,true);r.render(game.heroScene,game.camera);
    const cubeIsolated=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,cubeIsolated);
    r.setClearColor(oldColor,oldAlpha);
-   let bikeOnBlank=0,cubeOnBlank=0,blankCorner=[],bikeCorner=[],cubeCorner=[];
+   let bikeOnBlank=0,cubeOnBlank=0,markerOnBlank=0,blankCorner=[],bikeCorner=[],cubeCorner=[];
    for(let i=0;i<blank.length;i+=4){
      if(Math.abs(blank[i]-bikeIsolated[i])+Math.abs(blank[i+1]-bikeIsolated[i+1])+Math.abs(blank[i+2]-bikeIsolated[i+2])>30)bikeOnBlank++;
+     if(Math.abs(blank[i]-markerPixels[i])+Math.abs(blank[i+1]-markerPixels[i+1])+Math.abs(blank[i+2]-markerPixels[i+2])>30)markerOnBlank++;
      if(Math.abs(blank[i]-cubeIsolated[i])+Math.abs(blank[i+1]-cubeIsolated[i+1])+Math.abs(blank[i+2]-cubeIsolated[i+2])>30)cubeOnBlank++;
    }
    for(const buffer of [blank,bikeIsolated,cubeIsolated])blankCorner.push([...buffer.subarray(0,4)]);
@@ -62,7 +70,7 @@ try{
     if(diff<32)continue;
     const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);changed++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
    }
-   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
+   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
      restored:Math.abs(game.playerBike.group.position.x-game.player.x)<.02&&Math.abs(game.playerBike.group.position.z-game.player.z)<.02,renderer:gl.getParameter(gl.VERSION),error:gl.getError()};
   }finally{r.autoClear=wasAuto}
  });
