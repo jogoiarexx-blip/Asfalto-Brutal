@@ -1,4 +1,4 @@
-# ASFALTO BRUTAL v2.0.4 — Tráfego, IA e aderência
+# ASFALTO BRUTAL v2.0.5 — Tráfego, IA e aderência
 
 Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
 
@@ -143,7 +143,7 @@ O impacto é uma simulação arcade determinística, não um motor completo de c
 - Modo Leve: iluminação econômica, sem luz de preenchimento adicional.
 - A câmera selecionada fica salva neste navegador.
 
-## v2.0.4 — Modelo do jogador sempre à frente do cenário
+## v2.0.5 — Modelo do jogador sempre à frente do cenário
 
 - Asfalto, carros, rivais, cenário e objetos continuam sendo renderizados na cena principal.
 - A moto e o piloto são desenhados numa segunda cena WebGL, com limpeza **apenas da profundidade**, impedindo que algum objeto do cenário esconda sua moto. A sombra do chão permanece na primeira cena.
@@ -154,12 +154,15 @@ O impacto é uma simulação arcade determinística, não um motor completo de c
   - glTF-Transform — https://github.com/donmccurdy/glTF-Transform — pipeline futuro de simplificação e compressão de modelos GLB externos.
   - meshoptimizer — https://github.com/zeux/meshoptimizer — otimizador de geometria para novos assets, especialmente em máquinas fracas.
 
-O código atual usa motos procedurais em Three.js, não GLBs externos. Por isso, glTF-Transform e meshoptimizer são recomendações para a futura entrada de assets, e **não** foram integrados à execução agora. Spector.js também não é carregado automaticamente: o diagnóstico F9 não depende de bibliotecas adicionais nem da rede. Na versão 2.0.4, a moto renderizada na frente do cenário pode sobrepor objetos muito próximos (compromisso para impedir o desaparecimento da moto até investigarmos diferenças de GPU).
+O código atual usa motos procedurais em Three.js, não GLBs externos. Por isso, glTF-Transform e meshoptimizer são recomendações para a futura entrada de assets, e **não** foram integrados à execução agora. Spector.js também não é carregado automaticamente: o diagnóstico F9 não depende de bibliotecas adicionais nem da rede. Na versão 2.0.5, a moto renderizada na frente do cenário pode sobrepor objetos muito próximos (compromisso para impedir o desaparecimento da moto até investigarmos diferenças de GPU).
 
-## Diagnóstico real da moto — v2.0.4
+## Diagnóstico real da moto — v2.0.5
 
 - **F9** mostra chamadas 3D e a diferença efetiva dos pixels da moto na GPU.
-- Se a GPU envia as malhas, mas não grava pixels, o jogo ativa automaticamente uma **representação 2D de segurança** do jogador, mantendo física, câmera, armas, colisões e sombras normais.
-- **F10** força/libera manualmente o modo visual de segurança. É uma solução de contingência; a renderização original 3D permanece ativa e seu resultado será confirmado em teste no seu navegador.
+- Na v2.0.5, a matriz 3D não é mais corrompida por um ângulo inválido. A moto e o piloto são desenhados como modelos Three.js originais na mesma cena dos rivais.
 - Leituras `gl.readPixels` apenas a cada 1,6 s durante corrida; em modo menu, pausas ou quedas, não executa leituras.
 - O overlay não substitui modelos 3D de outros pilotos, nem oferece rig 3D completo.
+
+## v2.0.5: causa raiz eliminada
+
+Os getters de aceleração/freio sem gamepad passavam `undefined` para o cálculo de inclinação da moto. `undefined * number` produzia `NaN`, invalidando sua matriz 3D. Getters agora retornam booleanos e a rotação inválida é descartada; não há mais overlay ou modo visual alternativo.

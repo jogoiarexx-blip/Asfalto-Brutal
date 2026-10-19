@@ -88,4 +88,4 @@
 @media(max-width:680px){.hero-debug{top:105px;right:4px;font-size:10px}}
 
 /* v2.0.4: only shown when GPU fails to write motorcycle pixels. */
-#hero-safe-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;contain:strict;}
+

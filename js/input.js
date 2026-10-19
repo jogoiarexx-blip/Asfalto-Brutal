@@ -39,9 +39,9 @@ export class Input {
   this.gamepad={steer:Math.abs(axis)>.16?axis:0,accelerate:b(7)||b(0),brake:b(6),nitro:b(3),left:rising[2]||rising[4],right:rising[1]||rising[5],pause:rising[9]||rising[8],camera:rising[11],menuConfirm:rising[0]||rising[9],menuBack:rising[1],menuLeft:rising[14],menuRight:rising[15],menuUp:rising[12],menuDown:rising[13],weaponStep:(rising[13]||rising[15]?1:0)-(rising[12]||rising[14]?1:0)};
  }
  get steer(){return Math.max(-1,Math.min(1,(this.pressed('KeyD','ArrowRight')||this.touch.has('right')?1:0)-(this.pressed('KeyA','ArrowLeft')||this.touch.has('left')?1:0)+(this.gamepad.steer||0)))}
- get accelerating(){return this.pressed('KeyW','ArrowUp')||this.touch.has('accelerate')||this.gamepad.accelerate}
- get braking(){return this.pressed('Space','KeyS','ArrowDown')||this.touch.has('brake')||this.gamepad.brake}
- get boosting(){return this.pressed('ShiftLeft','ShiftRight')||this.touch.has('nitro')||this.gamepad.nitro}
+ get accelerating(){return !!(this.pressed('KeyW','ArrowUp')||this.touch.has('accelerate')||this.gamepad.accelerate)}
+ get braking(){return !!(this.pressed('Space','KeyS','ArrowDown')||this.touch.has('brake')||this.gamepad.brake)}
+ get boosting(){return !!(this.pressed('ShiftLeft','ShiftRight')||this.touch.has('nitro')||this.gamepad.nitro)}
  consumeHits(){const v={left:!!(this.leftQueued||this.gamepad.left),right:!!(this.rightQueued||this.gamepad.right)};this.leftQueued=false;this.rightQueued=false;this.gamepad.left=false;this.gamepad.right=false;return v}
  consumeWeapon(current='chain'){
   const result=this.weaponQueued||(this.weaponStep||this.gamepad.weaponStep?nextWeapon(current,(this.weaponStep||this.gamepad.weaponStep)):null);

@@ -1,11 +1,11 @@
 {
   "name": "asfalto-brutal",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "type": "module",
   "private": true,
   "description": "Jogo Three.js de corrida e combate de motocicletas com polícia, garagem e armas corpo a corpo.",
   "scripts": {
-    "test": "node tests/logic.test.mjs && node tests/input.test.mjs && node tests/encounters.test.mjs && node tests/progression.test.mjs && node tests/integrity.test.mjs && node tests/combat-v15.test.mjs && node tests/handling-defense.test.mjs && node tests/race-dynamics.test.mjs && node tests/traffic-v18.test.mjs && node tests/graphics-v19.test.mjs && node tests/camera-lighting-v20.test.mjs && node tests/player-visibility.test.mjs && node tests/shadows-compat.test.mjs && node tests/hero-compositor.test.mjs && node tests/hero-gpu-fallback.test.mjs",
+    "test": "node tests/logic.test.mjs && node tests/input.test.mjs && node tests/encounters.test.mjs && node tests/progression.test.mjs && node tests/integrity.test.mjs && node tests/combat-v15.test.mjs && node tests/handling-defense.test.mjs && node tests/race-dynamics.test.mjs && node tests/traffic-v18.test.mjs && node tests/graphics-v19.test.mjs && node tests/camera-lighting-v20.test.mjs && node tests/player-visibility.test.mjs && node tests/shadows-compat.test.mjs && node tests/hero-compositor.test.mjs && node tests/real-player-matrix.test.mjs",
     "start": "python -m http.server 8000"
   }
 }

@@ -6,6 +6,8 @@ globalThis.document={addEventListener:on,querySelectorAll:()=>[],hidden:false};
 let mockPad=null;Object.defineProperty(globalThis,'navigator',{configurable:true,value:{getGamepads:()=>mockPad?[mockPad]:[]}});
 const dispatch=(type,code)=>{for(const fn of listeners.get(type)||[])fn({code,repeat:false,preventDefault(){}})};
 const input=new Input();
+for(const key of ['accelerating','braking','boosting'])assert.equal(input[key],false,key+' must return boolean false with no gamepad');
+
 dispatch('keydown','KeyD');assert.equal(input.steer,1,'D sends screen RIGHT');dispatch('keyup','KeyD');
 dispatch('keydown','KeyA');assert.equal(input.steer,-1,'A sends screen LEFT');dispatch('keyup','KeyA');
 dispatch('keydown','ArrowRight');assert.equal(input.steer,1);dispatch('keyup','ArrowRight');
@@ -26,5 +28,5 @@ mockPad.buttons[5].pressed=true;input.update();assert.deepEqual(input.consumeHit
 mockPad.buttons[5].pressed=false;input.update();
 mockPad.buttons[13].pressed=true;input.update();assert.equal(input.consumeWeapon('chain'),'club','D-pad changes equipped weapon');
 mockPad.buttons[13].pressed=false;input.update();
-mockPad=null;input.update();assert.equal(input.padConnected,false);dispatch('keydown','KeyD');input.reset();assert.equal(input.steer,0);
+mockPad=null;input.update();assert.equal(input.padConnected,false);dispatch('keydown','KeyD');input.reset();assert.equal(input.steer,0);for(const key of ['accelerating','braking','boosting'])assert.equal(input[key],false);
 console.log('Controles de teclado, ataques, debug e gamepad: OK.');

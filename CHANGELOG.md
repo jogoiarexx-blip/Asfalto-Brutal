@@ -1,3 +1,10 @@
+## v2.0.5 — CORREÇÃO DEFINITIVA DA CAUSA DA MOTO INVISÍVEL
+
+- Causa identificada com testes reais em Chromium WebGL: entrada undefined * escala -> rotação NaN em lean.rotation.x, invalidando matriz de todas malhas da moto do jogador.
+- Getters de freio, aceleração e nitro sempre retornam booleanos; salvaguarda Number.isFinite na inclinação.
+- Removidas cenas alternativas, canvas 2D e F10. Jogador, rivais e pista agora compartilham a mesma cena Three.js.
+- Acrescentados testes automatizados para entrada sem controle, matriz 3D e prova de pixels no GPU Chromium.
+
 ## v2.0.4 — Resgate visual com evidência de GPU
 
 - Captura de tela v2.0.3 comprovou que 77 draw calls não garantiam pixels coloridos da moto.
