@@ -1,3 +1,14 @@
+## v2.0.3 — Correção estrutural da moto invisível + diagnóstico de WebGL
+
+- **Desenho independente do protagonista**: cena e passagem WebGL exclusivamente para a moto do jogador. O cenário é renderizado primeiro; `clearDepth()` limpa somente o buffer de profundidade antes da segunda passagem, evitando que a pista e outros objetos ocultem a motocicleta.
+- **Sombra preservada no asfalto**: o círculo de contato permanece na cena principal com um âncora que acompanha a posição/rotação da moto.
+- **Iluminação do piloto sincronizada**: a cena do jogador recebe luz hemisférica e solar equivalentes às da pista; as configurações dinâmicas continuam afetando as cores dos materiais.
+- **Diagnóstico F9 / `?debug=1`**: painel técnico exibe a ligação entre cenas, número de malhas visíveis, render calls, GPU/contexto WebGL, câmera e posição do jogador.
+- **Menos regressões**: testes simulam a ordem das chamadas de renderização, a restauração de `autoClear` após falha e o vínculo entre sombra e modelo.
+- Todos os sistemas de garagem, IA, armas, física, animações e gamepad foram preservados.
+
+**Importante:** a reprodução visual WebGL ainda depende de validação no navegador do usuário; a passagem dupla corrige uma classe de falhas de oclusão/desenho e deixa diagnóstico técnico caso haja outro bloqueio (shader, GPU, câmera etc.).
+
 ## v2.0.2 — Compatibilidade de sombras com Three.js r186
 
 - Substituído `THREE.PCFSoftShadowMap` (removido do WebGLRenderer) por `THREE.PCFShadowMap`.

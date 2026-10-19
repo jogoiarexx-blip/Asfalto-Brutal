@@ -22,3 +22,6 @@ NOVO v1.8: 6 personalidades de rivais, trânsito que muda de faixa e freia, derr
 NOVO v1.9: novos carros e motos, cenários arquitetônicos e configurações de sombras e renderização.
 
 V2.0: C = trocar câmera; R3 = trocar câmera no controle. Menu: câmera e iluminação.
+
+DIAGNOSTICO 3D (v2.0.3): F9 abre informações da moto, camera e GPU.
+Se a moto nao aparecer, pressione F9 e envie captura da tela.

@@ -1,4 +1,4 @@
-# ASFALTO BRUTAL v2.0.2 — Tráfego, IA e aderência
+# ASFALTO BRUTAL v2.0.3 — Tráfego, IA e aderência
 
 Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
 
@@ -142,3 +142,16 @@ O impacto é uma simulação arcade determinística, não um motor completo de c
 - Menu: escolha câmera inicial e iluminação Dinâmica, Suave ou Cinematográfica.
 - Modo Leve: iluminação econômica, sem luz de preenchimento adicional.
 - A câmera selecionada fica salva neste navegador.
+
+## v2.0.3 — Modelo do jogador sempre à frente do cenário
+
+- Asfalto, carros, rivais, cenário e objetos continuam sendo renderizados na cena principal.
+- A moto e o piloto são desenhados numa segunda cena WebGL, com limpeza **apenas da profundidade**, impedindo que algum objeto do cenário esconda sua moto. A sombra do chão permanece na primeira cena.
+- A luz da motocicleta acompanha a iluminação global da pista.
+- **Diagnóstico**: pressione **F9** durante o jogo (ou abra o endereço com `?debug=1`). O painel mostra `heroAttached`, `meshCount`, `visibleMeshes`, `glCalls`, `cameraXYZ` e `projectedHero`. Se mesmo assim o modelo não aparecer, copie esses valores para investigar o contexto WebGL e os draw calls.
+- **Ferramentas open source pesquisadas**:
+  - Spector.js — https://github.com/BabylonJS/Spector.js — extensão WebGL para capturar o frame, shaders e draw calls; útil caso o problema continue.
+  - glTF-Transform — https://github.com/donmccurdy/glTF-Transform — pipeline futuro de simplificação e compressão de modelos GLB externos.
+  - meshoptimizer — https://github.com/zeux/meshoptimizer — otimizador de geometria para novos assets, especialmente em máquinas fracas.
+
+O código atual usa motos procedurais em Three.js, não GLBs externos. Por isso, glTF-Transform e meshoptimizer são recomendações para a futura entrada de assets, e **não** foram integrados à execução agora. Spector.js também não é carregado automaticamente: o diagnóstico F9 não depende de bibliotecas adicionais nem da rede. Na versão 2.0.3, a moto renderizada na frente do cenário pode sobrepor objetos muito próximos (compromisso para impedir o desaparecimento da moto até investigarmos diferenças de GPU).
