@@ -10,7 +10,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox']});
 try{
  const page=await browser.newPage({viewport:{width:1366,height:768}});
- page.on('pageerror',e=>console.log('PAGE ERROR',e.message));
+ page.on('pageerror',e=>console.log('PAGE ERROR',e.message));page.on('console',m=>{if(m.type()==='error')console.log('THREE SHADER ERROR',m.text())});
  await page.route('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js',route=>route.fulfill({path:path.join(root,'node_modules/three/build/three.module.js'),contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}}));
  await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
  await page.waitForFunction(()=>window.__asfaltoBooted===true,{timeout:30000});
@@ -53,6 +53,20 @@ try{
    const markerPixels=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,markerPixels);
    game.playerBike.group.remove(marker);marker.geometry.dispose();marker.material.dispose();
+   const unique=new Set();game.playerBike.group.traverse(o=>{if(o.isMesh){for(const mat of (Array.isArray(o.material)?o.material:[o.material]))unique.add(mat)}});
+   const materials=[...unique].filter(Boolean),savedMaterials=materials.map(m=>({m,depthTest:m.depthTest,depthWrite:m.depthWrite,side:m.side}));
+   for(const m of materials){m.depthTest=false;m.depthWrite=false;m.side=three.DoubleSide;m.needsUpdate=true;}
+   r.clear(true,true,true);game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
+   const depthOff=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,depthOff);
+   for(const s of savedMaterials){s.m.depthTest=s.depthTest;s.m.depthWrite=s.depthWrite;s.m.side=s.side;s.m.needsUpdate=true;}
+   const simple=new three.MeshBasicMaterial({color:0xff0000,depthTest:false,depthWrite:false,side:three.DoubleSide});
+   const originalMeshes=[];game.playerBike.group.traverse(o=>{if(o.isMesh){originalMeshes.push({o,material:o.material});o.material=simple;}});
+   r.clear(true,true,true);game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
+   const basicOff=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,basicOff);
+   for(const s of originalMeshes)s.o.material=s.material;
+   simple.dispose();
+   const deltaCount=buf=>{let n=0;for(let i=0;i<buf.length;i+=4){if(Math.abs(buf[i]-blank[i])+Math.abs(buf[i+1]-blank[i+1])+Math.abs(buf[i+2]-blank[i+2])>30)n++;}return n};
+   const depthOffPixels=deltaCount(depthOff),basicMaterialPixels=deltaCount(basicOff),totalParts=originalMeshes.length,materialTypes=[...new Set(materials.map(m=>m.type))];
    r.clear(true,true,true);r.render(game.heroScene,game.camera);
    const cubeIsolated=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,cubeIsolated);
@@ -70,7 +84,7 @@ try{
     if(diff<32)continue;
     const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);changed++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
    }
-   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
+   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,depthOffPixels,basicMaterialPixels,totalParts,materialTypes,blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
      restored:Math.abs(game.playerBike.group.position.x-game.player.x)<.02&&Math.abs(game.playerBike.group.position.z-game.player.z)<.02,renderer:gl.getParameter(gl.VERSION),error:gl.getError()};
   }finally{r.autoClear=wasAuto}
  });
