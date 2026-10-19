@@ -1,3 +1,14 @@
+## v2.0.4 — Resgate visual com evidência de GPU
+
+- Captura de tela v2.0.3 comprovou que 77 draw calls não garantiam pixels coloridos da moto.
+- Comparação de pixels antes e depois do segundo passe Three.js em área projetada da moto.
+- Fallback visual 2D dinâmico (piloto, moto, inclinação e ataques) habilitado após duas verificações sem escrita de pixels.
+- Comando F10 permite testar o fallback imediatamente, sem necessidade de recarregar.
+- F9 atualizado com contagem de alterações de pixels, status e modo seguro.
+- Sem alterações na física, controles, IA, garagem, armas, progressão ou oclusão dos rivais.
+- Fallback é temporário: renderização 3D segue em atividade, e o overlay desliga após duas verificações positivas.
+- Limitação: não foi possível executar WebGL interativo no ambiente de validação; a correção definitiva da saída de fragmentos dependerá de captura Spector.js.
+
 ## v2.0.3 — Correção estrutural da moto invisível + diagnóstico de WebGL
 
 - **Desenho independente do protagonista**: cena e passagem WebGL exclusivamente para a moto do jogador. O cenário é renderizado primeiro; `clearDepth()` limpa somente o buffer de profundidade antes da segunda passagem, evitando que a pista e outros objetos ocultem a motocicleta.

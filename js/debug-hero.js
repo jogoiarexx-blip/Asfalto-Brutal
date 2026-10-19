@@ -5,7 +5,7 @@ export function heroDiagnostic(game){
  const state=heroSceneHealth(game.playerBike,game.heroScene);
  const p=game.player||{}, camera=game.camera;
  return {
-  version:'2.0.3',
+  version:'2.0.4',
   cameraMode:game.cameraMode,
   raceMode:game.mode,
   playerXYZ:[p.x,p.z,p.speed].map(fmt),
@@ -16,6 +16,8 @@ export function heroDiagnostic(game){
   shadows:!!game.renderer.shadowMap.enabled,
   cameraXYZ:[camera?.position?.x,camera?.position?.y,camera?.position?.z].map(fmt),
   projectedHero:[game.heroProbe?.x,game.heroProbe?.y,game.heroProbe?.z].map(fmt),
+  gpuPixelProof:{supported:game.heroPixelProbe?.supported??null,changed:game.heroPixelProbe?.changed??0,samples:game.heroPixelProbe?.samples??0,pixelWritesDetected:game.heroPixelProbe?.visible??null,status:game.heroPixelProbe?.status??'aguardando'},
+  safeOverlay:!!(game.forceSafeOverlay||game.heroPixelProbe?.active),
   glCalls:game.renderer.info.render.calls,
   glTriangles:game.renderer.info.render.triangles,
   video:(()=>{try{const gl=game.renderer.getContext();return gl.getParameter(gl.VERSION)||'unavailable'}catch{return 'WebGL indisponível'}})()
@@ -29,5 +31,5 @@ export function createHeroDebugPanel(){
 export function updateHeroDebugPanel(panel,game){
  if(!panel||panel.classList.contains('hidden'))return;
  const data=heroDiagnostic(game);
- panel.textContent='MOTO / GPU — F9 OCULTA\n'+JSON.stringify(data,null,2)+'\n\nSpector.js: capture draw calls se a moto continuar invisível.';
+ panel.textContent='MOTO / GPU — F9 OCULTA\n'+JSON.stringify(data,null,2)+'\n\nF10: alternar modo visual seguro. F9: diagnóstico. Spector.js: GPU capture.';
 }

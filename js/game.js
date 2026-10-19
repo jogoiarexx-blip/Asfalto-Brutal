@@ -25,6 +25,8 @@ import {LIGHT_MODES} from './lighting-director.js';
 import {preparePlayerVehicle,ensurePlayerVehicle,playerOutsideView} from './player-visibility.js';
 import {renderWorldAndHero,syncHeroLighting} from './hero-compositor.js';
 import {createHeroDebugPanel,updateHeroDebugPanel} from './debug-hero.js';
+import {HeroPixelProbe} from './hero-pixel-probe.js';
+import {HeroSafeOverlay} from './hero-safe-overlay.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -45,8 +47,9 @@ export class Game{
   this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
+  this.heroPixelProbe=new HeroPixelProbe();this.heroSafeOverlay=new HeroSafeOverlay($('game'));this.forceSafeOverlay=false;this.heroPixelPoints=[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()];this.heroSafeGround=new THREE.Vector3();
   this.heroProbe=new THREE.Vector3();this.heroOutOfViewTime=0;this.heroDiagnosticTick=0;this.bindUI();
-  document.addEventListener('keydown',e=>{if(e.code==='F9'&&!e.repeat){e.preventDefault();this.heroDebugEnabled=!this.heroDebugEnabled;this.heroDebugPanel.classList.toggle('hidden',!this.heroDebugEnabled)}});this.renderGarage();this.buildTrack();this.resize();
+  document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='F9'){e.preventDefault();this.heroDebugEnabled=!this.heroDebugEnabled;this.heroDebugPanel.classList.toggle('hidden',!this.heroDebugEnabled)}else if(e.code==='F10'){e.preventDefault();this.forceSafeOverlay=!this.forceSafeOverlay;this.notify(this.forceSafeOverlay?'MOTO: VISUAL SEGURO ATIVADO (F10)':'MOTO: MODO AUTOMÁTICO (F10)')}});this.renderGarage();this.buildTrack();this.resize();
   addEventListener('resize',()=>this.resize());this.renderer.setAnimationLoop(t=>this.frameLoop(t));
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&this.mode==='race')this.pause()});
   $('loading').classList.add('hidden');window.__asfaltoBooted=true;
@@ -64,7 +67,7 @@ export class Game{
   this.playerBike.group.name='PLAYER_BIKE_3D';this.heroScene.add(this.playerBike.group);
   this.playerBike.shadow.removeFromParent();this.heroShadowAnchor.add(this.playerBike.shadow);this.scene.add(this.heroShadowAnchor);
   this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
-  this.playerBike.group.position.set(this.player.x,0,0);this.heroOutOfViewTime=0;this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
+  this.playerBike.group.position.set(this.player.x,0,0);this.heroOutOfViewTime=0;this.heroPixelProbe.reset();this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
   this.syncHeroShadow();syncHeroLighting(this.world,this.heroHemi,this.heroSun);
   this.cameraDirector.reset(frameCamera({player:this.player,route:this.route,mode:this.cameraMode,menu:true,reducedMotion:this.reducedMotion}));this.world.update(0,.016,this.lighting);
  }
@@ -158,7 +161,7 @@ export class Game{
   if(announce)this.notify(`${this.weapon.name} EQUIPADA!`);
   return true;
  }
- resize(){const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setPixelRatio(this.renderProfile.pixelRatio);this.renderer.setSize(w,h,false)}
+ resize(){const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setPixelRatio(this.renderProfile.pixelRatio);this.renderer.setSize(w,h,false);this.heroSafeOverlay?.resize()}
  start(){
   this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
@@ -582,7 +585,26 @@ export class Game{
    if(this.mode==='pause'&&this.input.consumePause())this.resume();
    if(this.mode==='menu'){this.playerBike.lean.rotation.z=Math.sin(now*.001)*.025;animateRider(this.playerBike,{dt,time:now*.001});this.world.update(0,dt,this.lighting);this.syncHeroShadow();if(this.input.consumeDebug())this.toggleHull()}
    if(this.mode!=='pause'){this.updateCamera(dt);if(this.world?.exposure)this.renderer.toneMappingExposure=this.world.exposure;}
-   syncHeroLighting(this.world,this.heroHemi,this.heroSun);renderWorldAndHero(this.renderer,this.scene,this.heroScene,this.camera);
+   syncHeroLighting(this.world,this.heroHemi,this.heroSun);
+   // The v2.0.3 field diagnostic proved calls were submitted, not that pixels
+   // were written. Compare framebuffer patches before/after the hero pass.
+   const probe=this.heroPixelProbe,check=probe.shouldSample(dt,this.mode==='race'&&!this.playerFall);
+   if(check){
+    const v=this.heroPixelPoints,p=this.player;
+    v[0].set(p.x,1.12,p.z).project(this.camera);
+    v[1].set(p.x,2.47,p.z).project(this.camera);
+    v[2].set(p.x-.52,1.84,p.z).project(this.camera);
+    v[3].set(p.x+.52,1.84,p.z).project(this.camera);
+   }
+   renderWorldAndHero(this.renderer,this.scene,this.heroScene,this.camera,check?(stage=>{
+    if(stage==='world')probe.start(this.renderer,this.heroPixelPoints);
+    else probe.finish();
+   }):null);
+   this.heroSafeGround.set(this.player.x,.25,this.player.z).project(this.camera);
+   this.heroSafeOverlay.draw({visible:this.mode!=='menu'&&(this.forceSafeOverlay||probe.active),
+    player:this.player,camera:this.camera,worldPoint:this.heroSafeGround,fall:!!this.playerFall,
+    attackAge:this.playerAttackAge,attackSide:this.attackSide,boosting:this.input.boosting,
+    model:this.garage.selected});
    if(this.heroDebugEnabled){this.heroDiagnosticTick+=dt;if(this.heroDiagnosticTick>.3){this.heroDiagnosticTick=0;updateHeroDebugPanel(this.heroDebugPanel,this)}}
   }catch(e){console.error('Erro no loop do jogo:',e);this.renderer.setAnimationLoop(null);$('fatal').classList.remove('hidden');$('fatal').querySelector('p').textContent=e.message}
  }

@@ -11,15 +11,17 @@
  * animation and input are otherwise unchanged. Never clear the COLOR buffer
  * between passes, and restore the renderer's original autoClear setting.
  */
-export function renderWorldAndHero(renderer, world, hero, camera) {
+export function renderWorldAndHero(renderer, world, hero, camera, onPass = null) {
  if (!renderer || !world || !hero || !camera) return false;
  const previousAutoClear = renderer.autoClear;
  try {
   renderer.autoClear = false;
   renderer.clear(true, true, true);
   renderer.render(world, camera);
+  if(onPass)onPass('world');
   renderer.clearDepth();
   renderer.render(hero, camera);
+  if(onPass)onPass('hero');
   return true;
  } finally {
   renderer.autoClear = previousAutoClear;

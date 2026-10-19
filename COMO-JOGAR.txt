@@ -1,4 +1,4 @@
-ASFALTO BRUTAL v1.9
+ASFALTO BRUTAL v2.0.4
 
 1. Extraia todo o conteúdo do ZIP.
 2. No Windows, abra INICIAR-JOGO.bat.
@@ -25,3 +25,9 @@ V2.0: C = trocar câmera; R3 = trocar câmera no controle. Menu: câmera e ilumi
 
 DIAGNOSTICO 3D (v2.0.3): F9 abre informações da moto, camera e GPU.
 Se a moto nao aparecer, pressione F9 e envie captura da tela.
+
+NOVO v2.0.4: F9 mostra se a GPU realmente escreveu pixels da moto.
+Se a imagem 3D da moto não aparecer, o jogo tenta ativar automaticamente
+um desenho de segurança do veículo (fallback 2D) após duas medições sem pixels.
+F10: ativa/desativa manualmente a representação visual de segurança.
+O fallback evita ficar sem moto visível, mas não substitui o modelo original 3D.
