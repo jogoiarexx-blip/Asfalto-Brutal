@@ -39,8 +39,12 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const code=fs.readFileSync(path.join(root,'js/game.js'),'utf8');
 assert.match(code,/this\.heroScene\.add\(this\.playerBike\.group\)/,'player must be in hero scene');
 assert.match(code,/this\.scene\.add\(this\.heroShadowAnchor\)/,'ground shadow must be in world scene');
-assert.match(code,/renderWorldAndHero\(this\.renderer,this\.scene,this\.heroScene,this\.camera,check\?/,'frame loop needs compositor and optional GPU proof');
+assert.match(code,/renderWorldAndHero\(this\.renderer,this\.scene,this\.heroScene,this\.camera,null,/,'frame loop needs compositor and optional GPU proof');
 assert.match(code,/this\.heroShadowAnchor\.position\.copy\(this\.playerBike\.group\.position\)/,'shadow tracks bike');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.match(html,/V 2\.0\.4/);
+assert.match(html,/V 2\.0\.5/);
 console.log('Composição em 2 passos, profundidade limpa, sombra no mundo e diagnóstico F9: OK.');
+
+const calls=[];const renderer3D={autoClear:true,clear(){},clearDepth(){},render(scene){calls.push(scene)}};
+renderWorldAndHero(renderer3D,'world','hero',{},null,()=>calls.push('actual3D'));
+assert.deepEqual(calls,['world','actual3D'],'3D render must not double-draw hero');

@@ -1,3 +1,10 @@
+## v2.0.5 — Renderização da moto com geometria 3D real
+
+- Eliminados o canvas 2D de contingência e a tecla F10.
+- Adicionado cálculo determinístico de enquadramento 3D câmera-relativa com restauração garantida da transformação física.
+- Preservados os modelos procedurais 3D, a sombra, a física, os controles, a garagem e os inimigos.
+- Adicionados testes de cálculo de projeção e um teste de GPU com Chromium em GitHub Actions.
+
 ## v2.0.4 — Resgate visual com evidência de GPU
 
 - Captura de tela v2.0.3 comprovou que 77 draw calls não garantiam pixels coloridos da moto.
