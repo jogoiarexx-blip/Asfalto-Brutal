@@ -48,11 +48,11 @@ try{
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,bikeIsolated);
    const marker=new three.Mesh(new three.BoxGeometry(1.8,1.8,1.8),new three.MeshBasicMaterial({color:0xff0000,depthTest:false,depthWrite:false,side:three.DoubleSide}));
    marker.position.set(0,1.25,0);marker.frustumCulled=false;marker.renderOrder=999;
-   game.playerBike.group.add(marker);
+   game.playerBike.lean.add(marker);
    r.clear(true,true,true);game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
    const markerPixels=new Uint8Array(w*h*4);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,markerPixels);
-   game.playerBike.group.remove(marker);marker.geometry.dispose();marker.material.dispose();
+   game.playerBike.lean.remove(marker);marker.geometry.dispose();marker.material.dispose();
    const unique=new Set();game.playerBike.group.traverse(o=>{if(o.isMesh){for(const mat of (Array.isArray(o.material)?o.material:[o.material]))unique.add(mat)}});
    const materials=[...unique].filter(Boolean),savedMaterials=materials.map(m=>({m,depthTest:m.depthTest,depthWrite:m.depthWrite,side:m.side}));
    for(const m of materials){m.depthTest=false;m.depthWrite=false;m.side=three.DoubleSide;m.needsUpdate=true;}
@@ -84,7 +84,7 @@ try{
     if(diff<32)continue;
     const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);changed++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
    }
-   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,depthOffPixels,basicMaterialPixels,totalParts,materialTypes,blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
+   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,depthOffPixels,basicMaterialPixels,totalParts,materialTypes,leanScale:[...game.playerBike.lean.scale],leanMatrixDet:game.playerBike.lean.matrixWorld.determinant(),leanPosition:[...game.playerBike.lean.position],blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
      restored:Math.abs(game.playerBike.group.position.x-game.player.x)<.02&&Math.abs(game.playerBike.group.position.z-game.player.z)<.02,renderer:gl.getParameter(gl.VERSION),error:gl.getError()};
   }finally{r.autoClear=wasAuto}
  });
