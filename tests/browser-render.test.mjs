@@ -14,7 +14,7 @@ try{
  await page.route('https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js',route=>route.fulfill({path:path.join(root,'node_modules/three/build/three.module.js'),contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}}));
  await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
  await page.waitForFunction(()=>window.__asfaltoBooted===true,{timeout:30000});
- const data=await page.evaluate(()=>{
+ const data=await page.evaluate(async()=>{
   const game=window.asfaltoGame;game.start();game.mode='race';game.renderer.setAnimationLoop(null);game.updatePlayerModel(.016,false);game.updateCamera(.016);
   const r=game.renderer,gl=r.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
   const before=new Uint8Array(w*h*4),after=new Uint8Array(w*h*4),wasAuto=r.autoClear;r.autoClear=false;
@@ -24,13 +24,28 @@ try{
    r.clearDepth();
    const drawn=game.playerView3D.draw(r,game.heroScene,game.camera,game.playerBike,game.player);
    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,after);
+   const three=await import('three');
+   const testCube=new three.Mesh(new three.BoxGeometry(2,2,2),new three.MeshBasicMaterial({color:0xff00ff,depthTest:false,depthWrite:false,side:three.DoubleSide}));
+   testCube.position.set(0,0,-8).applyMatrix4(game.camera.matrixWorld);
+   testCube.frustumCulled=false;
+   game.heroScene.add(testCube);
+   r.render(game.heroScene,game.camera);
+   const cubePixels=new Uint8Array(w*h*4);
+   gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,cubePixels);
+   game.heroScene.remove(testCube);testCube.geometry.dispose();testCube.material.dispose();
+   let coloredBefore=0,coloredAfter=0,cubeChanged=0;
+   for(let i=0;i<before.length;i+=4){
+     if(before[i]+before[i+1]+before[i+2]>100)coloredBefore++;
+     if(after[i]+after[i+1]+after[i+2]>100)coloredAfter++;
+     if(Math.abs(cubePixels[i]-after[i])+Math.abs(cubePixels[i+1]-after[i+1])+Math.abs(cubePixels[i+2]-after[i+2])>30)cubeChanged++;
+   }
    let changed=0,minX=w,minY=h,maxX=0,maxY=0;
    for(let i=0;i<before.length;i+=4){
     const diff=Math.abs(before[i]-after[i])+Math.abs(before[i+1]-after[i+1])+Math.abs(before[i+2]-after[i+2]);
     if(diff<32)continue;
     const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);changed++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
    }
-   return {drawn,changed,bounds:[minX,minY,maxX,maxY],w,h,attached:game.playerBike.group.parent===game.heroScene,
+   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,w,h,attached:game.playerBike.group.parent===game.heroScene,
      restored:Math.abs(game.playerBike.group.position.x-game.player.x)<.02&&Math.abs(game.playerBike.group.position.z-game.player.z)<.02,renderer:gl.getParameter(gl.VERSION),error:gl.getError()};
   }finally{r.autoClear=wasAuto}
  });
