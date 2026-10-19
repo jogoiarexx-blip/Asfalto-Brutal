@@ -15,7 +15,7 @@ try{
  await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'load'});
  await page.waitForFunction(()=>window.__asfaltoBooted===true,{timeout:30000});
  const data=await page.evaluate(async()=>{
-  const game=window.asfaltoGame;game.start();game.mode='race';game.renderer.setAnimationLoop(null);game.updatePlayerModel(.016,false);game.updateCamera(.016);
+  const game=window.asfaltoGame;game.start();game.mode='race';game.renderer.setAnimationLoop(null);game.updatePlayerModel(.016,false);game.updateCamera(.016);const leanBeforeWasInvalid=!Number.isFinite(game.playerBike.lean.rotation.x);game.playerBike.lean.rotation.x=0;
   const r=game.renderer,gl=r.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
   const before=new Uint8Array(w*h*4),after=new Uint8Array(w*h*4),wasAuto=r.autoClear;r.autoClear=false;
   try{
@@ -84,7 +84,7 @@ try{
     if(diff<32)continue;
     const pixel=i/4,x=pixel%w,y=Math.floor(pixel/w);changed++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
    }
-   return {drawn,changed,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,depthOffPixels,basicMaterialPixels,totalParts,materialTypes,leanScale:[...game.playerBike.lean.scale],leanMatrixDet:game.playerBike.lean.matrixWorld.determinant(),leanPosition:[...game.playerBike.lean.position],blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
+   return {drawn,changed,leanBeforeWasInvalid,bounds:[minX,minY,maxX,maxY],coloredBefore,coloredAfter,cubeChanged,bikeOnBlank,cubeOnBlank,markerOnBlank,depthOffPixels,basicMaterialPixels,totalParts,materialTypes,leanScale:[...game.playerBike.lean.scale],leanMatrixDet:game.playerBike.lean.matrixWorld.determinant(),leanPosition:[...game.playerBike.lean.position],blankCorner,w,h,attached:game.playerBike.group.parent===game.heroScene,
      restored:Math.abs(game.playerBike.group.position.x-game.player.x)<.02&&Math.abs(game.playerBike.group.position.z-game.player.z)<.02,renderer:gl.getParameter(gl.VERSION),error:gl.getError()};
   }finally{r.autoClear=wasAuto}
  });
