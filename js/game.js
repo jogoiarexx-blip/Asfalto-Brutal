@@ -192,13 +192,28 @@ export class Game{
  pause(){if(this.mode!=='race')return;this.mode='pause';this.input.reset();$('pause-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');this.audio.update(0,false,false);this.audio.siren(false)}
  resume(){if(this.mode!=='pause')return;this.mode='race';$('pause-screen').classList.add('hidden');this.setTouch()}
  home(){this.mode='menu';this.simAccum=0;this.renderGarage();this.renderCampaign();$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('police-status').classList.add('is-hidden');$('menu').classList.remove('hidden');$('pause-screen').classList.add('hidden');$('finish-screen').classList.add('hidden');$('hud').classList.add('is-hidden');$('countdown').classList.add('hidden');$('touch-controls').classList.add('is-hidden');this.audio.update(0,false,false);this.audio.siren(false);this.buildTrack()}
+
  finish(reason='finish'){
-  if(this.mode!=='race')return;this.mode='finish';$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('finish-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');
-  $('finish-kicker').textContent=reason==='crash'?'FIM DE PISTA':this.player.health>0&&this.position()===1?'VOCÊ DOMINOU A ESTRADA':'LINHA DE CHEGADA';
+  if(this.mode!=='race')return;
+  this.mode='finish';$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('finish-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');
+  const finished=reason==='finish'&&allCheckpointsPassed(this.checkpoints);
+  $('finish-kicker').textContent=reason==='crash'?'FIM DE PISTA':this.mission?'DESAFIO DA GANGUE':'LINHA DE CHEGADA';
   $('finish-headline').innerHTML=reason==='crash'?'MOTO<br/><span>DESTRUÍDA.</span>':this.position()<=3?'PÓDIO<br/><span>CONQUISTADO.</span>':'CORRIDA<br/><span>CONCLUÍDA.</span>';
-  const {garage,amount}=awardRace(this.garage,{place:this.position(),finished:reason!=='crash',hits:this.hits,escapes:this.escapes,z:this.player.z});
-  this.garage=garage;this.earnedLast=amount;saveGarage(this.storage,this.garage);$('final-money').textContent=`+ ${formatMoney(amount)} CR`;$('final-wallet').textContent=`SALDO: ${formatMoney(this.garage.money)} CR`;
-  $('final-place').textContent=`${this.position()}º`;$('final-time').textContent=formatTime(this.elapsed);$('final-hits').textContent=String(this.hits);$('final-falls').textContent=String(this.falls);$('final-escapes').textContent=String(this.escapes);
+  const payout=awardRace(this.garage,{place:this.position(),finished,hits:this.hits,escapes:this.escapes,z:this.player.z});
+  this.garage=payout.garage;let bonus=0;
+  $('mission-result').classList.add('hidden');$('mission-result').classList.remove('success');
+  if(this.mission){
+   const outcome=completeMission(this.campaign,this.mission.id,{finished,checkpointsValid:allCheckpointsPassed(this.checkpoints),place:this.position(),hits:this.hits,falls:this.falls,escapes:this.escapes,health:this.player.health,time:this.elapsed});
+   this.campaign=outcome.campaign;saveCampaign(this.storage,this.campaign);bonus=outcome.bonus;
+   $('mission-result').classList.remove('hidden');
+   $('mission-result').classList.toggle('success',outcome.success);
+   $('mission-result').textContent=outcome.success?(outcome.replay?'MISSÃO REJOGADA · SEM BÔNUS DUPLICADO':'MISSÃO CONCLUÍDA! NOVO DESAFIO DESBLOQUEADO.'):('MISSÃO NÃO CONCLUÍDA · '+outcome.failures.join(' '));
+   if(outcome.success)$('finish-headline').innerHTML='MISSÃO<br/><span>CONCLUÍDA.</span>';
+  }
+  this.garage.money=Math.min(99999999,this.garage.money+bonus);
+  this.earnedLast=payout.amount+bonus;saveGarage(this.storage,this.garage);
+  $('final-money').textContent='+ '+formatMoney(this.earnedLast)+' CR';$('final-wallet').textContent='SALDO: '+formatMoney(this.garage.money)+' CR';
+  $('final-place').textContent=this.position()+'º';$('final-time').textContent=formatTime(this.elapsed);$('final-hits').textContent=String(this.hits);$('final-falls').textContent=String(this.falls);$('final-escapes').textContent=String(this.escapes);
   this.audio.tone(reason==='crash'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
  }
  position(){return rankOf(this.player.z,this.rivals)}
