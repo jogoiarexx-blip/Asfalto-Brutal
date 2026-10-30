@@ -18,7 +18,7 @@
 
     <header id="hud" class="hud is-hidden">
       <div class="hud-left">
-        <div class="eyebrow"><span class="pulse"></span> CORRIDA EM ANDAMENTO <span id="course-tag">COSTA FANTASMA</span></div><div id="race-objective" class="race-objective">CORRIDA LIVRE · CHEGUE AO FINAL</div><div id="stage-status" class="stage-status" aria-live="off">POSTOS 0/3 · PRÓXIMO 950 M</div><div id="mission-live" class="mission-live hidden" aria-live="off"></div>
+        <div class="eyebrow"><span class="pulse"></span> CORRIDA EM ANDAMENTO <span id="course-tag">COSTA FANTASMA</span></div><div id="race-objective" class="race-objective">CORRIDA LIVRE · CHEGUE AO FINAL</div><div id="stage-status" class="stage-status" aria-live="off">POSTOS 0/3 · PRÓXIMO 950 M</div><div id="road-branch" class="road-branch hidden" aria-live="off"></div><div id="mission-live" class="mission-live hidden" aria-live="off"></div>
         <div class="race-stats"><div class="race-position"><strong id="place">7<span>º</span></strong><small>POSIÇÃO <em>/ 7</em></small></div><div class="race-time"><strong id="timer">00:00</strong><small>TEMPO</small></div></div>
       </div>
       <div class="hud-right">
@@ -39,7 +39,7 @@
 
     <section id="menu" class="overlay menu" aria-label="Menu principal">
       <div class="overlay-inner">
-        <div class="topline"><span class="wing">✦</span> ARCADE MOTO COMBAT · GRÁFICOS EVOLUÍDOS <span class="build-label">V 2.0.7 · FUGA E CAPTURA</span></div>
+        <div class="topline"><span class="wing">✦</span> ARCADE MOTO COMBAT · GRÁFICOS EVOLUÍDOS <span class="build-label">V 2.0.8 · ROTAS ALTERNATIVAS</span></div>
         <div class="hero-content"><div class="super-label">NÃO É SÓ UMA CORRIDA.</div><h1>ASFALTO<br/><span>BRUTAL</span><b class="title-slash">/</b></h1><p class="tagline">Acelere. Ultrapasse. Lute pelo primeiro lugar.<br/>Cada curva tem um rival. Cada segundo conta.</p></div>
         <div class="menu-panel"><div class="game-modes" role="group" aria-label="Modo de jogo"><button type="button" id="free-mode" class="mode-option selected">CORRIDA LIVRE</button><button type="button" id="campaign-mode" class="mode-option">CAMPANHA · CAPÍTULO I</button></div><section id="campaign-panel" class="campaign-panel hidden" aria-label="Missões da campanha"><div class="campaign-caption">A PRIMEIRA MARCHA <span id="campaign-count">0/6</span></div><p>Vença desafios, conquiste créditos e desbloqueie as próximas missões.</p><div id="campaign-missions" class="campaign-missions"></div><div id="mission-brief" class="mission-brief" aria-live="polite"></div></section><div id="free-track-picker"><div class="panel-title">ESCOLHA SUA ESTRADA <span>01 / 03</span></div>
           <div class="routes" id="routes"><button type="button" class="route selected" data-route="coast"><strong>01 <span>COSTA FANTASMA</span></strong><small>ASFALTO • MÉDIO</small></button><button type="button" class="route" data-route="desert"><strong>02 <span>ROTA DO DESERTO</span></strong><small>AREIA • RÁPIDO</small></button><button type="button" class="route" data-route="highlands"><strong>03 <span>SERRA DA FÚRIA</span></strong><small>MONTANHA • DIFÍCIL</small></button></div>
