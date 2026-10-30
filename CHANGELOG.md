@@ -1,3 +1,12 @@
+## 2.0.9 — 30/10/2026 — IA de rivais, trânsito e polícia usa bifurcações
+
+- Seleção determinística de ramal no início da bifurcação; cada NPC segue seu caminho até a reconexão.
+- Rivais e carros podem tomar os desvios nos três cenários.
+- Polícia pode acompanhar o jogador em estrada alternativa, sem teleporte entre pistas separadas.
+- Plano de ultrapassagem e distância ao jogador consideram a via física compartilhada.
+- Correções na resolução de colisões entre veículos sobre ramais.
+- Testes Node e integração WebGL adicionados; preservados modos, garagem, controle e campanha.
+
 ## 2.0.8 — 30/10/2026 — Bifurcações no mapa e pilotagem em rotas alternativas
 
 - Seis ramais físicos reais, dois em cada um dos três cenários originais.

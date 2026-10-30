@@ -1,4 +1,5 @@
 import {clamp,curveAt} from './config.js';
+import {roadCenter} from './road-network.js';
 import {HULLS,sweptVehicleHit} from './collision.js';
 /** Continuous npc contact response for traffic cars vs each other or motorbikes.
  * The player's collision remains exclusively owned by contact-response.js.
@@ -17,7 +18,7 @@ export function separateNpcPair(a,b,route='coast'){
  const side=Math.abs(cx)>.65&&Math.abs(cx)/sideGap>Math.abs(cz)/depthGap;
  const difference=Math.abs((a.speed||0)-(b.speed||0));
  if(side){
-  const dir=Math.sign(cx)||1,middle=(a.x+b.x)*.5,center=curveAt((a.z+b.z)*.5,route);
+  const dir=Math.sign(cx)||1,middle=(a.x+b.x)*.5,center=roadCenter(route,(a.z+b.z)*.5,(a.pathId||'main')===(b.pathId||'main')?a.pathId:'main');
   a.x=clamp(middle+dir*sideGap/2,center-5.48,center+5.48);
   b.x=clamp(a.x-dir*sideGap,center-5.48,center+5.48);
   a.x=clamp(b.x+dir*sideGap,center-5.48,center+5.48);
@@ -32,7 +33,7 @@ export function separateNpcPair(a,b,route='coast'){
   else a.speed=Math.min(a.speed,Math.max(0,leadSpeed));
  }
  for(const e of [a,b]){
-  e.laneOffset=clamp(e.x-curveAt(e.z,route),-5.5,5.5);
+  e.laneOffset=clamp(e.x-roadCenter(route,e.z,e.pathId||'main'),-5.5,5.5);
   e.contactRoll=Math.max(e.contactRoll||0,.15);
   e.hurtAnim=Math.max(e.hurtAnim||0,.14);
  }

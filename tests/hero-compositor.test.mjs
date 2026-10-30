@@ -42,5 +42,5 @@ assert.match(code,/this\.scene\.add\(this\.heroShadowAnchor\)/,'ground shadow mu
 assert.match(code,/this\.renderer\.render\(this\.scene,this\.camera\)/,'single scene render path');
 assert.match(code,/this\.heroShadowAnchor\.position\.copy\(this\.playerBike\.group\.position\)/,'shadow tracks bike');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.match(html,/V 2\.0\.8/);
+assert.match(html,/V 2\.0\.9/);
 console.log('Render 3D de jogador e rivais em uma única cena: OK.');

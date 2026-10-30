@@ -1,4 +1,5 @@
 import {clamp,curveAt,headingAt} from './config.js';
+import {roadCenter,roadHeading} from './road-network.js';
 import {HULLS,sweptVehicleHit} from './collision.js';
 
 /** Find a committed passing lane when an obstacle ahead is genuinely slower.
@@ -6,22 +7,22 @@ import {HULLS,sweptVehicleHit} from './collision.js';
  */
 export function chooseOvertake(rider,others,route='coast'){
  if(rider.fallen>0||rider.stunTimer>0)return null;
- const here=rider.laneOffset??rider.x-curveAt(rider.z,route);
- const ahead=others.filter(o=>o!==rider&&!(o.fallen>0)
+ const here=rider.laneOffset??rider.x-roadCenter(route,rider.z,rider.pathId||'main');
+ const ahead=others.filter(o=>o!==rider&&(o.pathId||'main')===(rider.pathId||'main')&&!(o.fallen>0)
    &&o.z-rider.z>2.7&&o.z-rider.z<Math.max(19,rider.speed*.88)
    &&(o.speed??0)<rider.speed-3
-   &&Math.abs((o.laneOffset??o.x-curveAt(o.z,route))-here)<1.75);
+   &&Math.abs((o.laneOffset??o.x-roadCenter(route,o.z,o.pathId||'main'))-here)<1.75);
  if(!ahead.length)return null;
  ahead.sort((a,b)=>a.z-b.z);
- const leader=ahead[0],leaderOffset=leader.laneOffset??leader.x-curveAt(leader.z,route);
+ const leader=ahead[0],leaderOffset=leader.laneOffset??leader.x-roadCenter(route,leader.z,leader.pathId||'main');
  const possible=[clamp(leaderOffset-2.7,-4.9,4.9),clamp(leaderOffset+2.7,-4.9,4.9)];
  let best=null,bestScore=Infinity;
  for(const offset of possible){
   if(Math.abs(offset-leaderOffset)<2.0)continue;
   let score=Math.abs(offset-here)*.16+Math.abs(offset)*.045;
-  for(const o of others){if(o===rider)continue;const oz=o.z-rider.z;
+  for(const o of others){if(o===rider||(o.pathId||'main')!==(rider.pathId||'main'))continue;const oz=o.z-rider.z;
    if(oz < -10||oz>40)continue;
-   const otherOffset=o.laneOffset??o.x-curveAt(o.z,route);
+   const otherOffset=o.laneOffset??o.x-roadCenter(route,o.z,o.pathId||'main');
    const lateral=Math.abs(otherOffset-offset);
    if(lateral<1.65)score+=10+(1.65-lateral)*8;
   }
@@ -57,8 +58,8 @@ export function resolveRivalPair(a,b,route='coast'){
  if(lateral){
   const sign=Math.sign(dx)||((a.laneOffset||0)>=(b.laneOffset||0)?1:-1);
   const mid=(a.x+b.x)/2, half=minSide/2+.035;
-  const roadCenter=curveAt((a.z+b.z)*.5,route);
-  const leftBound=roadCenter-5.6,rightBound=roadCenter+5.6;
+  const center=roadCenter(route,(a.z+b.z)*.5,(a.pathId||'main')===(b.pathId||'main')?a.pathId:'main');
+  const leftBound=center-5.6,rightBound=center+5.6;
   // Keep both bikes on the road; shift the pair together if one hits the bound.
   const targetA=clamp(mid+sign*half,leftBound,rightBound);
   const targetB=clamp(mid-sign*half,leftBound,rightBound);
@@ -74,8 +75,8 @@ export function resolveRivalPair(a,b,route='coast'){
   a.speed=Math.min(a.speed,slow+Math.max(1.3,collisionSpeed*.3));
   b.speed=Math.min(b.speed,slow+Math.max(1.3,collisionSpeed*.3));
  }
- a.laneOffset=clamp(a.x-curveAt(a.z,route),-5.6,5.6);
- b.laneOffset=clamp(b.x-curveAt(b.z,route),-5.6,5.6);
+ a.laneOffset=clamp(a.x-roadCenter(route,a.z,a.pathId||'main'),-5.6,5.6);
+ b.laneOffset=clamp(b.x-roadCenter(route,b.z,b.pathId||'main'),-5.6,5.6);
  a.hurtAnim=Math.max(a.hurtAnim||0,.16);b.hurtAnim=Math.max(b.hurtAnim||0,.16);
  a.contactRoll=Math.max(a.contactRoll||0,.23);
  b.contactRoll=Math.max(b.contactRoll||0,.23);
@@ -87,10 +88,11 @@ export function resolveRivalPair(a,b,route='coast'){
  */
 export function policeCurveTarget(police,player,route='coast'){
  const z=police.z,lookahead=clamp(police.speed*.68+14,18,65);
- const angle=Math.abs(Math.atan2(Math.sin(headingAt(z+lookahead,route)-headingAt(z,route)),Math.cos(headingAt(z+lookahead,route)-headingAt(z,route))));
+ const path=police.pathId||'main';
+ const angle=Math.abs(Math.atan2(Math.sin(roadHeading(route,z+lookahead,path)-roadHeading(route,z,path)),Math.cos(roadHeading(route,z+lookahead,path)-roadHeading(route,z,path))));
  const severity=clamp(angle/.38,0,1);
  const curveLimit=64-severity*17;
- const futurePlayerOffset=player.x-curveAt(player.z,route);
+ const futurePlayerOffset=(player.pathId||'main')===path?player.x-roadCenter(route,player.z,path):0;
  const lead=clamp((player.z-z)/110,0,.8);
  const desiredOffset=clamp(futurePlayerOffset*(.7+lead*.3)+(police.laneOffset||0)*(.3-lead*.3),-5.05,5.05);
  return {severity,curveLimit,desiredOffset};
