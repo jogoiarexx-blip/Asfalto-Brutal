@@ -35,7 +35,7 @@ try{
    g.player.x=roadCenter(g.route,g.player.z,fork.id);
    g.player.pathId='main';
    g.player.speed=40;g.player.steer=0;g.player.lateralVelocity=0;g.player.slideVelocity=0;
-   g.simulate(1/60);g.updateCamera(.016);g.scene.updateMatrixWorld(true);
+   g.simulate(1/60);g.updateHUD();g.updateCamera(.016);g.scene.updateMatrixWorld(true);
    sections.push({id:fork.id,path:g.player.pathId,centerError:Math.abs(g.player.x-roadCenter(g.route,g.player.z,fork.id)),worldElements:sceneForks.filter(n=>n.startsWith('FORK_'+fork.id)).length,hud:document.getElementById('road-branch').textContent,visible:!document.getElementById('road-branch').classList.contains('hidden'),matrix:g.playerBike.group.matrixWorld.determinant()});
   }
   g.renderer.render(g.scene,g.camera);
