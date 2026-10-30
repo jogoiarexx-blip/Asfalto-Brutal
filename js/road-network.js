@@ -5,14 +5,17 @@ import {curveAt,headingAt,ROAD_HALF,RACE_LENGTH} from './config.js';
  */
 const RAW={
  coast:[
+  {id:'enseada',name:'ATALHO DA ENSEADA',start:300,end:920,side:-1,amplitude:16},
   {id:'mirante',name:'VIA DO MIRANTE',start:1120,end:1770,side:-1,amplitude:21},
   {id:'cais',name:'ESTRADA DO CAIS',start:2070,end:2680,side:1,amplitude:19}
  ],
  desert:[
+  {id:'oasis',name:'PISTA DO OÁSIS',start:300,end:920,side:-1,amplitude:16},
   {id:'canion',name:'DESVIO DO CÂNION',start:1120,end:1770,side:1,amplitude:22},
   {id:'salinas',name:'TRILHA DAS SALINAS',start:2070,end:2680,side:-1,amplitude:20}
  ],
  highlands:[
+  {id:'pinheiros',name:'TRILHA DOS PINHEIROS',start:300,end:920,side:-1,amplitude:16},
   {id:'pedreira',name:'CORTE DA PEDREIRA',start:1120,end:1770,side:-1,amplitude:20},
   {id:'colina',name:'ESTRADA DA COLINA',start:2070,end:2680,side:1,amplitude:21}
  ]

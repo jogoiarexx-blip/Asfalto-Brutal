@@ -42,7 +42,7 @@ try{
   return {sections,errors:[],gl:g.renderer.getContext().getError()};
  });
  console.log('ROAD FORKS CHROMIUM:',JSON.stringify(data));
- assert.equal(data.sections.length,2);
+ assert.equal(data.sections.length,3);
  for(const s of data.sections){
   assert.equal(s.path,s.id,'motorcycle must select alternative branch');
   assert.ok(s.centerError<.5,'motorcycle must remain on branch road');

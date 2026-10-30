@@ -6,7 +6,7 @@ import {chooseOvertake,resolveRivalPair,policeCurveTarget} from '../js/race-dyna
 import {separateNpcPair} from '../js/npc-contact.js';
 import {HULLS,footprintOverlap} from '../js/collision.js';
 for(const route of ['coast','desert','highlands']){
- const forks=forksFor(route);assert.equal(forks.length,2);
+ const forks=forksFor(route);assert.equal(forks.length,3);
  for(const fork of forks){
   const start=fork.start+.5,mid=(fork.start+fork.end)/2;
   const riders=Array.from({length:6},(_,index)=>npcPrefersFork(route,fork.id,'rival',index));

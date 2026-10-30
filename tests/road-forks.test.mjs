@@ -5,7 +5,7 @@ import {CHECKPOINT_DISTANCES,createCheckpoints,advanceCheckpoints,allCheckpoints
 import {ROAD_FORKS,forksFor,activeFork,forkOffset,roadCenter,roadHeading,nearestRoad,isForkMouth,roadsideClearance,graphValid} from '../js/road-network.js';
 assert.equal(Object.keys(ROAD_FORKS).length,Object.keys(ROUTES).length);
 for(const route of Object.keys(ROUTES)){
- const forks=forksFor(route);assert.equal(forks.length,2,route+' has two connected roads');
+ const forks=forksFor(route);assert.equal(forks.length,3,route+' has three connected roads');
  assert.equal(graphValid(route),true);
  for(const fork of forks){
   assert.ok(fork.start<fork.end);

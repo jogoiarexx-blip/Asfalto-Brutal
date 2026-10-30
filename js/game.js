@@ -28,6 +28,7 @@ import {MISSIONS,missionById,missionUnlocked,loadCampaign,saveCampaign,completeM
 import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint,missedCheckpoint} from './checkpoints.js';
 import {roadCenter,roadHeading,activeFork,forkOffset} from './road-network.js';
 import {npcRoadChoice,spawnNpcPath,npcRoadPose,sameNpcRoad} from './npc-routing.js';
+import {initialMissionRun,advanceMissionRun,missionRunStatus} from './mission-events.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -183,8 +184,8 @@ export class Game{
  start(){
   this.mission=this.gameMode==='campaign'?missionById(this.selectedMissionId):null;
   if(this.mission)this.route=this.mission.route;
-  this.checkpoints=createCheckpoints();this.branchChoices={};this.simAccum=0;
-  this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
+  this.checkpoints=createCheckpoints();this.branchChoices={};this.missionRun=initialMissionRun(this.mission);this.simAccum=0;
+  this.buildTrack();if(this.mission?.cargo)this.world.createMissionMarkers(this.mission);this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.arrestProgress=0;this.arrestGrace=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
   $('menu').classList.add('hidden');$('finish-screen').classList.add('hidden');$('pause-screen').classList.add('hidden');
   $('hud').classList.remove('is-hidden');$('course-tag').textContent=ROUTES[this.route].name;$('race-objective').textContent=this.mission?'MISSÃO · '+this.mission.objective:'CORRIDA LIVRE · 3 CHECKPOINTS OBRIGATÓRIOS';this.renderWeapons();$('mission-live').classList.toggle('hidden',!this.mission);this.setTouch();this.audio.start();this.audio.siren(false);this.updateHUD();
@@ -205,7 +206,7 @@ export class Game{
   this.garage=payout.garage;let bonus=0;
   $('mission-result').classList.add('hidden');$('mission-result').classList.remove('success');
   if(this.mission){
-   const outcome=completeMission(this.campaign,this.mission.id,{finished,checkpointsValid:allCheckpointsPassed(this.checkpoints),place:this.position(),hits:this.hits,falls:this.falls,escapes:this.escapes,health:this.player.health,time:this.elapsed});
+   const outcome=completeMission(this.campaign,this.mission.id,{finished,checkpointsValid:allCheckpointsPassed(this.checkpoints),place:this.position(),hits:this.hits,falls:this.falls,escapes:this.escapes,health:this.player.health,time:this.elapsed,visitedForks:this.missionRun?.visitedForks,cargoDelivered:this.missionRun?.cargoDelivered});
    this.campaign=outcome.campaign;saveCampaign(this.storage,this.campaign);bonus=outcome.bonus;
    $('mission-result').classList.remove('hidden');
    $('mission-result').classList.toggle('success',outcome.success);
@@ -317,6 +318,7 @@ export class Game{
   p.yaw=roadHeading(this.route,p.z,p.pathId)-p.steer*.105;
   const branch=activeFork(this.route,p.z);
   if(branch&&p.pathId===branch.id&&Math.abs(forkOffset(branch,p.z))>12&&!this.branchChoices[branch.id]){this.branchChoices[branch.id]=true;this.notify('ROTA ALTERNATIVA: '+branch.name)}
+  if(this.mission){const progress=advanceMissionRun(this.mission,this.missionRun,p,movement.old.z);this.missionRun=progress.run;for(const event of progress.events)this.notify(event);if(progress.events.some(event=>event.includes('ENCOMENDA')||event.includes('ENTREGA')))this.world.setMissionMarkerProgress(this.missionRun)}
   const oldGateCount=this.checkpoints.passed;
   this.checkpoints=advanceCheckpoints(this.checkpoints,movement.old.z,p.z,p.x-curveAt(p.z,this.route),ROAD_HALF);
   if(this.checkpoints.passed>oldGateCount)this.notify('CHECKPOINT '+this.checkpoints.passed+'/'+this.checkpoints.gates.length+' VALIDADO');
@@ -636,6 +638,7 @@ export class Game{
    if(m.minHealth)parts.push('MOTO '+Math.ceil(p.health)+'% / '+m.minHealth+'%');
    if(m.maxFalls!==undefined)parts.push('QUEDAS '+this.falls+'/'+m.maxFalls);
    if(m.timeLimit)parts.push('TEMPO '+Math.max(0,Math.ceil(m.timeLimit-this.elapsed))+' S');
+   parts.push(...missionRunStatus(m,this.missionRun,p.z));
    $('mission-live').textContent=parts.join(' · ');
   }
  }

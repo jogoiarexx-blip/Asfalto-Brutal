@@ -1,3 +1,19 @@
+# ASFALTO BRUTAL v2.1.0 — Capítulo II com entregas e caminhos obrigatórios
+
+**Nova campanha: 9 missões e 9 ramais dirigíveis** (3 por cenário), sem remover as 6 missões originais, rivais, garagem, armas e controle.
+
+- **07 · Correio da Enseada (Costa Fantasma):** entre no atalho da Enseada, retire um pacote identificado por marcador 3D no ramal (535 m), faça a entrega na pista principal (3300 m), complete a corrida com 25% ou mais de integridade.
+- **08 · Sombra do Cânion (Rota do Deserto):** siga pelo desvio do Cânion, despiste a polícia pelo menos uma vez e complete a corrida.
+- **09 · Pacto das Serras (Serra da Fúria):** utilize Pedreira e Colina, derrube pelo menos um rival e termine em 5º ou melhor.
+- Três novas estradas alternativas: **Atalho da Enseada**, **Pista do Oásis** e **Trilha dos Pinheiros**, conectadas à estrada principal antes do primeiro checkpoint.
+- Coleta e entrega não podem ocorrer por outra estrada, a distância excessiva ou em marcha à ré; portais de checkpoint continuam obrigatórios.
+- Marcadores low poly 3D de coleta/entrega, estados no HUD e avaliação da missão na chegada; bônus únicos.
+- Saves da campanha 2.0.9 continuam compatíveis: progresso de seis missões desbloqueia automaticamente a missão 7.
+
+**Validação:** testes de lógica e cenas controladas no Chromium/WebGL. Não representa jogar as nove missões integralmente com controles humanos ou completar o planejamento total de 18 missões do GDD.
+
+## Histórico anterior
+
 # ASFALTO BRUTAL v2.0.9 — Rivais, trânsito e polícia nos desvios
 
 Evolução do MD com **tráfego real nos caminhos alternativos** da v2.0.8.

@@ -1,3 +1,13 @@
+## 2.1.0 — 30/10/2026 — Capítulo II: coleta, entrega e fuga por desvios
+
+- Campanha evolui de 6 para 9 missões, preservando salvamento anterior.
+- Entrega com pacote 3D na Enseada e destino na via principal, mediante passagem legítima sobre a estrada correta.
+- Fuga pelo Cânion com perseguição obrigatória.
+- Desafio de combate e múltiplas rotas na Serra.
+- Terceiro ramal em cada bioma: 9 bifurcações dirigíveis no total.
+- Indicadores de desvio cumprido, encomenda coletada e entrega confirmada no HUD.
+- Bônus inéditos sem duplicação e testes determinísticos + browser integrado.
+
 ## 2.0.9 — 30/10/2026 — IA de rivais, trânsito e polícia usa bifurcações
 
 - Seleção determinística de ramal no início da bifurcação; cada NPC segue seu caminho até a reconexão.
