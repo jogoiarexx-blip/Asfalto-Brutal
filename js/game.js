@@ -290,7 +290,7 @@ export class Game{
   }
   if(strike.age>.42)this.activeStrike=null;
  }
- updateCountdown(dt){this.countTimer-=dt;const txt=this.countTimer>2.2?'3':this.countTimer>1.2?'2':this.countTimer>.2?'1':'VAI!';if($('countdown').textContent!==txt){$('countdown').textContent=txt;this.audio.tone(txt==='VAI!'?770:430,.14,'square',.04)}if(this.countTimer<=-.52){this.mode='race';$('countdown').classList.add('hidden');this.audio.start()}}
+ updateCountdown(dt){this.countTimer-=dt;const txt=this.countTimer>2.2?'3':this.countTimer>1.2?'2':this.countTimer>.2?'1':'VAI!';if($('countdown').textContent!==txt){$('countdown').textContent=txt;this.audio.tone(txt==='VAI!'?770:430,.14,'square',.04)}if(this.countTimer<=-.52){this.mode='race';$('countdown').classList.add('hidden');this.audio.start();if(this.mission?.policeStart){this.spawnPolice();this.heat=85}}}
  simulate(dt){
   if(this.input.consumePause()){this.pause();return}
   if(this.input.consumeDebug())this.toggleHull();
@@ -312,6 +312,9 @@ export class Game{
   const steer=this.input.steer,accel=this.input.accelerating,brake=this.input.braking;
   const movement=moveBike(p,{steer,accel,brake,boost:this.input.boosting},dt,this.route,chosenBike(this.garage));
   p.yaw=headingAt(p.z,this.route)-p.steer*.105;
+  const oldGateCount=this.checkpoints.passed;
+  this.checkpoints=advanceCheckpoints(this.checkpoints,movement.old.z,p.z,p.x-curveAt(p.z,this.route),ROAD_HALF);
+  if(this.checkpoints.passed>oldGateCount)this.notify('CHECKPOINT '+this.checkpoints.passed+'/'+this.checkpoints.gates.length+' VALIDADO');
   if(movement.offRoad)this.cameraShake=Math.max(this.cameraShake,.045);
   if(movement.railImpact&&this.hurtCooldown<=0)this.hit(11,true,0);
   this.dustClock-=dt;if(movement.offRoad&&p.speed>12&&this.dustClock<=0){this.dustClock=.16;this.spawnDust(p.x,p.z)}
@@ -321,7 +324,7 @@ export class Game{
   this.updateCombat(dt);this.updatePickups(dt);this.updateEffects(dt);this.updatePlayerModel(dt,movement.boosted);
   if(this.toastTimer>0){this.toastTimer-=dt;if(this.toastTimer<=0)$('toast').classList.remove('visible')}
   this.flashTimer=Math.max(0,this.flashTimer-dt);$('hit-flash').style.opacity=String(clamp(this.flashTimer*1.9,0,.65));
-  $('speed-lines').classList.toggle('active',movement.boosted&&p.speed>32);this.audio.update(p.speed,movement.boosted,true);this.audio.siren(!!this.police&&Math.abs(this.police.z-p.z)<105,this.police?.z-p.z||0);this.world.update(p.z,dt,this.lighting);this.hudTick+=dt;if(this.hudTick>.065){this.hudTick=0;this.updateHUD()}if(p.z>=RACE_LENGTH){this.updateHUD();this.finish()}
+  $('speed-lines').classList.toggle('active',movement.boosted&&p.speed>32);this.audio.update(p.speed,movement.boosted,true);this.audio.siren(!!this.police&&Math.abs(this.police.z-p.z)<105,this.police?.z-p.z||0);this.world.update(p.z,dt,this.lighting);this.hudTick+=dt;if(this.hudTick>.065){this.hudTick=0;this.updateHUD()}if(p.z>=RACE_LENGTH){if(!allCheckpointsPassed(this.checkpoints)){const retry=nextCheckpoint(this.checkpoints);p.z=Math.max(0,(retry??RACE_LENGTH)-22);p.x=curveAt(p.z,this.route);p.speed=Math.min(p.speed,16);this.notify('CHECKPOINT PERDIDO · RETORNANDO AO POSTO')}else{this.updateHUD();this.finish()}}
  }
  updateAI(dt){
   for(let i=0;i<this.rivals.length;i++){
@@ -580,7 +583,7 @@ export class Game{
    }
   }
  }
- updateHUD(){const p=this.player;$('speed').textContent=String(kmh(p.speed));$('place').innerHTML=`${this.position()}<span>º</span>`;$('timer').textContent=formatTime(this.elapsed);$('health-label').textContent=`${Math.ceil(p.health)}%`;$('health-bar').style.width=`${p.health}%`;$('nitro-label').textContent=`${Math.ceil(p.nitro)}%`;$('nitro-bar').style.width=`${p.nitro}%`;$('weapon-hud').textContent=this.weapon.hud;$('police-status').classList.toggle('is-hidden',!this.police);$('wanted-fill').style.width=`${Math.round(this.heat)}%`;$('police-distance').textContent=this.police?`${Math.round(Math.abs(this.player.z-this.police.z))} M`:'--';const progress=clamp(100*p.z/RACE_LENGTH,0,100);$('progress-fill').style.width=`${progress}%`;$('progress-pin').style.left=`${progress}%`;$('distance').textContent=`${Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')} / ${RACE_LENGTH.toLocaleString('pt-BR')} M`}
+ updateHUD(){const p=this.player;$('speed').textContent=String(kmh(p.speed));$('place').innerHTML=`${this.position()}<span>º</span>`;$('timer').textContent=formatTime(this.elapsed);$('health-label').textContent=`${Math.ceil(p.health)}%`;$('health-bar').style.width=`${p.health}%`;$('nitro-label').textContent=`${Math.ceil(p.nitro)}%`;$('nitro-bar').style.width=`${p.nitro}%`;$('weapon-hud').textContent=this.weapon.hud;$('police-status').classList.toggle('is-hidden',!this.police);$('wanted-fill').style.width=`${Math.round(this.heat)}%`;$('police-distance').textContent=this.police?`${Math.round(Math.abs(this.player.z-this.police.z))} M`:'--';const progress=clamp(100*p.z/RACE_LENGTH,0,100);$('progress-fill').style.width=`${progress}%`;$('progress-pin').style.left=`${progress}%`;$('distance').textContent=`${Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')} / ${RACE_LENGTH.toLocaleString('pt-BR')} M`;$('checkpoint-status').textContent='POSTOS '+this.checkpoints.passed+'/'+this.checkpoints.gates.length}
  handleMenuGamepad(){
   const buttons=this.input.consumeMenu();
   if(this.mode==='menu'){
@@ -599,7 +602,7 @@ export class Game{
  }
  frameLoop(now){
   const rawDt=Math.max(.001,(now-this.lastFrame)/1000);
-  const dt=Math.min(.04,rawDt);this.lastFrame=now;this.frame++;
+  const dt=Math.min(.09,rawDt);this.lastFrame=now;this.frame++;
   if(this.mode==='race'){
    this.fpsTime+=rawDt;this.fpsFrames++;
    if(this.fpsTime>=2.2){
@@ -619,7 +622,7 @@ export class Game{
    }
   }
   try{
-   this.input.update();if(this.input.consumeCamera()&&this.mode==='race')this.selectCamera(nextCameraMode(this.cameraMode),true);if(this.input.padConnected!==this.lastPadStatus){this.lastPadStatus=this.input.padConnected;$('pad-indicator').textContent=this.lastPadStatus?'🎮 CONTROLE CONECTADO':'TECLADO'}this.handleMenuGamepad();if(this.mode==='countdown')this.updateCountdown(dt);const cinematicFactor=this.impactSlow>0?.55:1;this.impactSlow=Math.max(0,this.impactSlow-rawDt);if(this.mode==='race')this.simulate(dt*cinematicFactor);
+   this.input.update();if(this.input.consumeCamera()&&this.mode==='race')this.selectCamera(nextCameraMode(this.cameraMode),true);if(this.input.padConnected!==this.lastPadStatus){this.lastPadStatus=this.input.padConnected;$('pad-indicator').textContent=this.lastPadStatus?'🎮 CONTROLE CONECTADO':'TECLADO'}this.handleMenuGamepad();if(this.mode==='countdown')this.updateCountdown(dt);const cinematicFactor=this.impactSlow>0?.55:1;this.impactSlow=Math.max(0,this.impactSlow-rawDt);if(this.mode==='race'){const step=1/60;this.simAccum=Math.min(this.simAccum+dt,step*5);let steps=0;while(this.simAccum>=step&&steps<5&&this.mode==='race'){this.simulate(step*cinematicFactor);this.simAccum-=step;steps++}}else this.simAccum=0;
    if(this.mode==='pause'&&this.input.consumePause())this.resume();
    if(this.mode==='menu'){this.playerBike.lean.rotation.z=Math.sin(now*.001)*.025;animateRider(this.playerBike,{dt,time:now*.001});this.world.update(0,dt,this.lighting);this.syncHeroShadow();if(this.input.consumeDebug())this.toggleHull()}
    if(this.mode!=='pause'){this.updateCamera(dt);if(this.world?.exposure)this.renderer.toneMappingExposure=this.world.exposure;}
