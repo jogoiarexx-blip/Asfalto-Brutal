@@ -14,7 +14,7 @@ export function missionTargets(mission){
 }
 function reachesTarget(target,p,previousZ,radius){
  if(p.pathId!==target.pathId||!Number.isFinite(p.x)||!Number.isFinite(p.z)||!Number.isFinite(previousZ))return false;
- if(p.z<target.z-radius||previousZ>target.z+radius)return false;
+ if(p.z<previousZ||p.z<target.z-radius||p.z>target.z+radius||previousZ>target.z+radius)return false;
  const center=roadCenter(target.route,p.z,target.pathId);
  return Math.abs(p.x-center)<=radius;
 }
