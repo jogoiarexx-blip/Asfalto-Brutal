@@ -1,3 +1,19 @@
+# ASFALTO BRUTAL v2.0.9 — Rivais, trânsito e polícia nos desvios
+
+Evolução do MD com **tráfego real nos caminhos alternativos** da v2.0.8.
+
+- Os seis rivais passam a decidir em cada entrada de ramal se seguem pela estrada principal ou pelo atalho, mantendo a decisão até a junção.
+- Parte dos carros de trânsito entra nos caminhos laterais. Veículos carregados ou reaparecidos dentro de um ramal nascem alinhados à estrada correta.
+- A polícia pode acompanhar o jogador em um desvio. Quando chega atrasada a uma bifurcação, só muda de via na entrada, nunca no meio de duas pistas afastadas.
+- A IA calcula faixas, ultrapassagens, reação ao jogador, curvas e colisões **relativamente à estrada selecionada**, não ao centro da estrada principal.
+- Colisões entre veículos na rota alternativa não reajustam os envolvidos para a via principal.
+- Escolhas reproduzíveis facilitam testes de regressão e não precisam de sorteios por quadro.
+- Novo teste Node para decisões de rota, ultrapassagens e contatos; teste Chromium/WebGL para motos, carros e polícia.
+
+**Pendente:** trânsito e polícia com decisões táticas de navegação mais amplas, rede viária totalmente conectada, mapa urbano, missões exclusivas por atalho, testes de seis corridas completas em jogo natural. A versão 2.0.9 não implementa esses recursos.
+
+## Histórico anterior
+
 # ASFALTO BRUTAL v2.0.8 — Estradas alternativas jogáveis
 
 Evolução do GDD *Road Rash 3D + Jailbreak*: a **Costa Fantasma**, a **Rota do Deserto** e a **Serra da Fúria** recebem agora **duas bifurcações cada**, num total de seis ramais reais em 3D.
