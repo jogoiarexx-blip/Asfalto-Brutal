@@ -14,7 +14,7 @@ export function missionTargets(mission){
 }
 function reachesTarget(target,p,previousZ,radius){
  if(p.pathId!==target.pathId||!Number.isFinite(p.x)||!Number.isFinite(p.z)||!Number.isFinite(previousZ))return false;
- if(p.z<previousZ||p.z<target.z-radius||p.z>target.z+radius||previousZ>target.z+radius)return false;
+ if(p.z<previousZ||p.z-previousZ>8||p.z<target.z-radius||p.z>target.z+radius||previousZ>target.z+radius)return false;
  const center=roadCenter(target.route,p.z,target.pathId);
  return Math.abs(p.x-center)<=radius;
 }
@@ -24,7 +24,7 @@ export function advanceMissionRun(mission,run,player,previousZ){
  const events=[],route=mission?.route;
  if(!mission||!route)return {run:result,events};
  const fork=activeFork(route,player.z);
- if(fork&&player.pathId===fork.id&&Math.abs(forkOffset(fork,player.z))>12&&!result.visitedForks[fork.id]){
+ if(fork&&player.pathId===fork.id&&Number.isFinite(previousZ)&&player.z>=previousZ&&player.z-previousZ<=8&&Math.abs(forkOffset(fork,player.z))>12&&!result.visitedForks[fork.id]){
   result.visitedForks[fork.id]=true;events.push('ROTA VISITADA · '+fork.name);
  }
  if(mission.cargo){
