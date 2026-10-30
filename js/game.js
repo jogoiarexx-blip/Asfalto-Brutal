@@ -197,9 +197,9 @@ export class Game{
   if(this.mode!=='race')return;
   this.mode='finish';$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('finish-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');
   const finished=reason==='finish'&&allCheckpointsPassed(this.checkpoints);
-  $('finish-kicker').textContent=reason==='crash'?'FIM DE PISTA':this.mission?'DESAFIO DA GANGUE':'LINHA DE CHEGADA';
-  $('finish-headline').innerHTML=reason==='crash'?'MOTO<br/><span>DESTRUÍDA.</span>':this.position()<=3?'PÓDIO<br/><span>CONQUISTADO.</span>':'CORRIDA<br/><span>CONCLUÍDA.</span>';
-  const payout=awardRace(this.garage,{place:this.position(),finished,hits:this.hits,escapes:this.escapes,z:this.player.z});
+  $('finish-kicker').textContent=reason==='arrest'?'VOCÊ FOI PRESO':reason==='crash'?'FIM DE PISTA':this.mission?'DESAFIO DA GANGUE':'LINHA DE CHEGADA';
+  $('finish-headline').innerHTML=reason==='arrest'?'FIM DA<br/><span>FUGA.</span>':reason==='crash'?'MOTO<br/><span>DESTRUÍDA.</span>':this.position()<=3?'PÓDIO<br/><span>CONQUISTADO.</span>':'CORRIDA<br/><span>CONCLUÍDA.</span>';
+  const payout=awardRace(this.garage,{place:this.position(),finished,hits:this.hits,escapes:this.escapes,z:reason==='arrest'?0:this.player.z});
   this.garage=payout.garage;let bonus=0;
   $('mission-result').classList.add('hidden');$('mission-result').classList.remove('success');
   if(this.mission){
@@ -207,14 +207,14 @@ export class Game{
    this.campaign=outcome.campaign;saveCampaign(this.storage,this.campaign);bonus=outcome.bonus;
    $('mission-result').classList.remove('hidden');
    $('mission-result').classList.toggle('success',outcome.success);
-   $('mission-result').textContent=outcome.success?(outcome.replay?'MISSÃO REJOGADA · SEM BÔNUS DUPLICADO':'MISSÃO CONCLUÍDA! NOVO DESAFIO DESBLOQUEADO.'):('MISSÃO NÃO CONCLUÍDA · '+outcome.failures.join(' '));
+   $('mission-result').textContent=outcome.success?(outcome.replay?'MISSÃO REJOGADA · SEM BÔNUS DUPLICADO':'MISSÃO CONCLUÍDA! NOVO DESAFIO DESBLOQUEADO.'):('MISSÃO NÃO CONCLUÍDA · '+(reason==='arrest'?'Você foi preso. ':'')+outcome.failures.join(' '));
    if(outcome.success)$('finish-headline').innerHTML='MISSÃO<br/><span>CONCLUÍDA.</span>';
   }
   this.garage.money=Math.min(99999999,this.garage.money+bonus);
   this.earnedLast=payout.amount+bonus;saveGarage(this.storage,this.garage);
   $('final-money').textContent='+ '+formatMoney(this.earnedLast)+' CR';$('final-wallet').textContent='SALDO: '+formatMoney(this.garage.money)+' CR';
   $('final-place').textContent=this.position()+'º';$('final-time').textContent=formatTime(this.elapsed);$('final-hits').textContent=String(this.hits);$('final-falls').textContent=String(this.falls);$('final-escapes').textContent=String(this.escapes);
-  this.audio.tone(reason==='crash'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
+  this.audio.tone(reason==='crash'||reason==='arrest'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
  }
  position(){return rankOf(this.player.z,this.rivals)}
  notify(message){$('toast').textContent=message;$('toast').classList.add('visible');this.toastTimer=1.45}
@@ -315,10 +315,12 @@ export class Game{
   const oldGateCount=this.checkpoints.passed;
   this.checkpoints=advanceCheckpoints(this.checkpoints,movement.old.z,p.z,p.x-curveAt(p.z,this.route),ROAD_HALF);
   if(this.checkpoints.passed>oldGateCount)this.notify('CHECKPOINT '+this.checkpoints.passed+'/'+this.checkpoints.gates.length+' VALIDADO');
+  const missed=missedCheckpoint(this.checkpoints,p.z);
+  if(missed!==null){p.z=missed-22;p.x=curveAt(p.z,this.route);p.speed=Math.min(p.speed,16);p.lateralVelocity=0;p.slideVelocity=0;p.bank=0;this.notify('CHECKPOINT PERDIDO · RETORNANDO AO POSTO')};
   if(movement.offRoad)this.cameraShake=Math.max(this.cameraShake,.045);
   if(movement.railImpact&&this.hurtCooldown<=0)this.hit(11,true,0);
   this.dustClock-=dt;if(movement.offRoad&&p.speed>12&&this.dustClock<=0){this.dustClock=.16;this.spawnDust(p.x,p.z)}
-  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.resolveContacts(movement.old);
+  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);if(this.mode!=='race')return;this.resolveRivalContacts();this.resolveTrafficContacts();this.resolveContacts(movement.old);
   const skid=skidIntensity({speed:p.speed,steer:p.steer,slip:p.slip,brake,offRoad:movement.offRoad});
   if(skid>.17&&this.skidMarks){this.skidMarks.add(p.x,p.z,p.yaw,skid);if(this.dustClock<=0&&movement.offRoad)this.spawnDust(p.x,p.z)}
   this.updateCombat(dt);this.updatePickups(dt);this.updateEffects(dt);this.updatePlayerModel(dt,movement.boosted);
