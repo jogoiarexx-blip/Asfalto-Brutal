@@ -1,4 +1,13 @@
-## v2.0.5 — CORREÇÃO DEFINITIVA DA CAUSA DA MOTO INVISÍVEL
+## 2.0.6 — 30/10/2026 — Campanha original / Jailbreak capítulo I
+
+- Seis missões sequenciais com critérios verificáveis e progresso salvo.
+- Checkpoints com validação de passagem, portais 3D e retorno ao posto não validado.
+- Desafio policial inicia perseguição real; HUD e resultado da missão integrados.
+- Recompensa única, sem duplicação por repetição, preservando garagem.
+- Loop de simulação com passo fixo de 60 Hz e limite de recuperação.
+- Testes automatizados de campanha e checkpoints (Node.js).
+
+# v2.0.5 — CORREÇÃO DEFINITIVA DA CAUSA DA MOTO INVISÍVEL
 
 - Causa identificada com testes reais em Chromium WebGL: entrada undefined * escala -> rotação NaN em lean.rotation.x, invalidando matriz de todas malhas da moto do jogador.
 - Getters de freio, aceleração e nitro sempre retornam booleanos; salvaguarda Number.isFinite na inclinação.
