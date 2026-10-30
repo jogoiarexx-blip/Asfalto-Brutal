@@ -588,7 +588,42 @@ export class Game{
    }
   }
  }
- updateHUD(){const p=this.player;$('speed').textContent=String(kmh(p.speed));$('place').innerHTML=`${this.position()}<span>º</span>`;$('timer').textContent=formatTime(this.elapsed);$('health-label').textContent=`${Math.ceil(p.health)}%`;$('health-bar').style.width=`${p.health}%`;$('nitro-label').textContent=`${Math.ceil(p.nitro)}%`;$('nitro-bar').style.width=`${p.nitro}%`;$('weapon-hud').textContent=this.weapon.hud;$('police-status').classList.toggle('is-hidden',!this.police);$('wanted-fill').style.width=`${Math.round(this.heat)}%`;$('police-distance').textContent=this.police?`${Math.round(Math.abs(this.player.z-this.police.z))} M`:'--';const progress=clamp(100*p.z/RACE_LENGTH,0,100);$('progress-fill').style.width=`${progress}%`;$('progress-pin').style.left=`${progress}%`;$('distance').textContent=`${Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')} / ${RACE_LENGTH.toLocaleString('pt-BR')} M`;$('checkpoint-status').textContent='POSTOS '+this.checkpoints.passed+'/'+this.checkpoints.gates.length}
+ updateHUD(){
+  const p=this.player;
+  $('speed').textContent=String(kmh(p.speed));
+  $('place').innerHTML=this.position()+'<span>º</span>';
+  $('timer').textContent=formatTime(this.elapsed);
+  $('health-label').textContent=Math.ceil(p.health)+'%';
+  $('health-bar').style.width=p.health+'%';
+  $('nitro-label').textContent=Math.ceil(p.nitro)+'%';
+  $('nitro-bar').style.width=p.nitro+'%';
+  $('weapon-hud').textContent=this.weapon.hud;
+  $('police-status').classList.toggle('is-hidden',!this.police);
+  $('wanted-fill').style.width=Math.round(this.heat)+'%';
+  $('police-distance').textContent=this.police?Math.round(Math.abs(p.z-this.police.z))+' M':'--';
+  const arrestPercent=Math.round(100*this.arrestProgress/ARREST_TIME);
+  $('arrest-status').classList.toggle('hidden',!this.police||arrestPercent===0);
+  $('arrest-percent').textContent=arrestPercent+'%';
+  $('arrest-fill').style.width=arrestPercent+'%';
+  const progress=clamp(100*p.z/RACE_LENGTH,0,100);
+  $('progress-fill').style.width=progress+'%';
+  $('progress-pin').style.left=progress+'%';
+  $('distance').textContent=Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')+' / '+RACE_LENGTH.toLocaleString('pt-BR')+' M';
+  const count=this.checkpoints.passed+'/'+this.checkpoints.gates.length;
+  $('checkpoint-status').textContent='POSTOS '+count;
+  const pending=nextCheckpoint(this.checkpoints);
+  $('stage-status').textContent='POSTOS '+count+(pending!==null?' · PRÓXIMO '+Math.max(0,Math.ceil(pending-p.z))+' M':' · RUMO À CHEGADA');
+  if(this.mission){
+   const m=this.mission,parts=[];
+   if(m.maxPlace)parts.push('META '+m.maxPlace+'º');
+   if(m.minHits)parts.push('RIVAIS '+this.hits+'/'+m.minHits);
+   if(m.minEscapes)parts.push('FUGAS '+this.escapes+'/'+m.minEscapes);
+   if(m.minHealth)parts.push('MOTO '+Math.ceil(p.health)+'% / '+m.minHealth+'%');
+   if(m.maxFalls!==undefined)parts.push('QUEDAS '+this.falls+'/'+m.maxFalls);
+   if(m.timeLimit)parts.push('TEMPO '+Math.max(0,Math.ceil(m.timeLimit-this.elapsed))+' S');
+   $('mission-live').textContent=parts.join(' · ');
+  }
+ }
  handleMenuGamepad(){
   const buttons=this.input.consumeMenu();
   if(this.mode==='menu'){
