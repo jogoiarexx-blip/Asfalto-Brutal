@@ -1,3 +1,19 @@
+# ASFALTO BRUTAL v2.0.6 — Campanha Jailbreak (Capítulo I)
+
+Implementação incremental do GDD **Fuga no Asfalto** sobre a base existente. O jogo mantém os modos, armas, IA, motos e três pistas anteriores; não substitui o projeto.
+
+- **Novo menu de campanha** com seis missões desbloqueáveis em sequência e objetivos verificáveis: pódio, combate, não cair, sobrevivência à perseguição policial, contra o relógio e desafio final de gangue.
+- **Três checkpoints por corrida**: o piloto deve cruzar os portais na ordem. Chegar com posto pendente reposiciona o jogador para tentar novamente.
+- **Recompensas únicas** por missão, sem duplicação ao rejogá-la, e progresso salvo em `localStorage` separado da garagem.
+- A missão de perseguição inicia com polícia ativa. Os outros desafios usam a pista e a lógica de trânsito/combatente já existentes.
+- Simulação do jogo agora avança em **passos fixos de 1/60 s** com acumulador limitado para evitar aceleração de física em monitores de 120 Hz.
+- Novas estruturas 3D low poly sobre a estrada, objetivo no HUD e avaliação detalhada no resultado.
+- Suite de testes adicionada em `tests/jailbreak-phase1.test.mjs`.
+
+**O que ainda não está pronto:** capítulos II/III, Sidecar, modo policial selecionável, tela dividida, missões de comboio e mapas com bifurcações. O jogo continua hospedado em HTML/ES Modules com Three.js por CDN, sem migração forçada para Vite. Veja `PLANO-EVOLUCAO-JAILBREAK.md` para o próximo trabalho.
+
+## Histórico anterior
+
 # ASFALTO BRUTAL v2.0.5 — Tráfego, IA e aderência
 
 Continuação direta da v1.7. Mantidos armas corpo a corpo, polícia, garagem, acidentes, teclado, controles USB/Bluetooth, touchscreen e formato web com GitHub Pages.
