@@ -1,5 +1,5 @@
 # ASFALTO BRUTAL — Execução do GDD Road Rash 3D + Jailbreak
-Versão 2.0.9 · 30/10/2026
+Versão 2.1.0 · 30/10/2026
 
 ## Situação do projeto
 O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros, IA de tráfego, cinco armas, polícia, garagem, controles e quedas. A evolução preserva essa base em Three.js com HTML e módulos, sem impor migração para Vite.
@@ -37,6 +37,18 @@ O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros
 - [x] Testes de rota e integração Chromium/WebGL com estados controlados.
 - [ ] Missões exclusivas de cada ramal, rede urbana mais ampla e playtests integrais.
 
+## Aplicado na 2.1.0 — Capítulo II inicial (9 de 18 missões planejadas)
+- [x] Três ramais por região: nove estradas secundárias 3D conectadas às principais.
+- [x] Missão 7: coleta de encomenda no Atalho da Enseada e entrega na rota principal.
+- [x] Missão 8: fuga com polícia ativa pelo Cânion.
+- [x] Missão 9: rotas Pedreira e Colina obrigatórias e combate.
+- [x] Validação de trajeto, entrega, checkpoints, integridade e bônus únicos.
+- [x] Progresso salvo das seis primeiras missões continua válido.
+- [x] Testes unitários e integração de estados no Chromium WebGL.
+- [ ] Certificação jogando integralmente as nove missões e balanceamento de dificuldade.
+- [ ] Ampliar rede urbana com cruzamentos reais e conectar ramais entre si.
+- [ ] Concluir missões 10–18, patrulha jogável e Sidecar.
+
 ## Capítulo I — seis missões
 | Missão | Local | Condição principal |
 |---|---|---|
@@ -47,7 +59,7 @@ O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros
 | 5 · Correio Urgente | Rota do Deserto | 4º ou melhor em 135 s |
 | 6 · Dono da Pista | Serra da Fúria | Pódio, 2 rivais derrubados, no máximo 1 queda |
 
-## Prioridades seguintes
+## Missões adicionais do Capítulo II\n| 07 · Correio da Enseada | Costa Fantasma | Desvio da Enseada, coleta, entrega e integridade >=25% |\n| 08 · Sombra do Cânion | Rota do Deserto | Cânion + fuga real da polícia |\n| 09 · Pacto das Serras | Serra da Fúria | Pedreira + Colina, 1 rival, 5º ou melhor |\n\n## Prioridades seguintes
 1. Jogar e balancear todas as seis missões do início ao fim, sem teleporte ou cenários controlados nos testes; certificar que é possível concluir todas.
 2. Expandir os ramais para uma malha de estradas interligadas, com escolhas táticas de navegação; adicionar checkpoints por segmento e classificação por distância válida efetivamente percorrida.
 3. Eventos narrativos e missões realmente específicas (resgate, entrega, escolta, fuga, líder rival).
