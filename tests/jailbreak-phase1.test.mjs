@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {MISSIONS,CAMPAIGN_KEY,loadCampaign,saveCampaign,normalizeCampaign,missionUnlocked,evaluateMission,completeMission} from '../js/jailbreak-campaign.js';
 import {CHECKPOINT_DISTANCES,createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint} from '../js/checkpoints.js';
 const map=new Map(),store={getItem:key=>map.get(key)??null,setItem:(k,v)=>map.set(k,v)};
-assert.equal(MISSIONS.length,6);
+assert.equal(MISSIONS.length,9);
 assert.equal(loadCampaign(store).completed.length,0);
 assert.equal(missionUnlocked(loadCampaign(store),MISSIONS[0].id),true);
 assert.equal(missionUnlocked(loadCampaign(store),MISSIONS[1].id),false);
