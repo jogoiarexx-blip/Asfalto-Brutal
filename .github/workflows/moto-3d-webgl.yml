@@ -1,7 +1,7 @@
 name: Asfalto Brutal motorcycle WebGL integration
 on:
   push:
-    branches: [main, feat/jailbreak-chapter1-gates-v206]
+    branches: [main, feat/jailbreak-pursuit-qa-v207]
   workflow_dispatch:
 jobs:
   webgl:
@@ -22,6 +22,7 @@ jobs:
           node --check js/game.js
           node --check js/world.js
           node tests/browser-render.test.mjs
+          node tests/jailbreak-browser.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
