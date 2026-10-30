@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,curveAt,headingAt} from './config.js';
 import {CHECKPOINT_DISTANCES} from './checkpoints.js';
 import {forksFor,roadCenter,roadHeading,isForkMouth,roadsideClearance} from './road-network.js';
+import {missionTargets} from './mission-events.js';
 import {buildRoadsideArchitecture} from './roadside-architecture.js';
 import {lightingFrame,lightBlend} from './lighting-director.js';
 const UP=new THREE.Vector3(0,1,0);const MATRIX=new THREE.Matrix4();const Q=new THREE.Quaternion();const V=new THREE.Vector3();const S=new THREE.Vector3();
@@ -184,6 +185,32 @@ export class RoadWorld{
    sign.name='FORK_'+fork.id+'_SIGN';
    this.add(sign);
   }
+ }
+ /** Visible 3D objective markers only for missions that require cargo handling. */
+ createMissionMarkers(mission){
+  this.missionMarkers={};
+  for(const target of missionTargets(mission)){
+   const isPick=target.id==='pickup',color=isPick?0xffca59:0x77f6a5;
+   const group=new THREE.Group();
+   const halo=new THREE.Mesh(new THREE.TorusGeometry(1.55,.17,7,20),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}));
+   halo.position.y=2.45;group.add(halo);
+   const box=new THREE.Mesh(isPick?new THREE.BoxGeometry(.95,.95,.95):new THREE.OctahedronGeometry(.78,0),new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:.20}));
+   box.position.y=2.4;group.add(box);
+   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,3.5,6),new THREE.MeshLambertMaterial({color:0x314755}));
+   pole.position.set(0,1.72,0);group.add(pole);
+   const flag=new THREE.Mesh(new THREE.BoxGeometry(2.7,.65,.12),new THREE.MeshBasicMaterial({color:isPick?0xfed27d:0x94fac3}));
+   flag.position.set(0,4.05,0);group.add(flag);
+   group.position.set(roadCenter(this.route,target.z,target.pathId),0,target.z);
+   group.rotation.y=roadHeading(this.route,target.z,target.pathId);
+   group.name='MISSION_'+target.id.toUpperCase();
+   this.add(group);this.missionMarkers[target.id]=group;
+  }
+  this.setMissionMarkerProgress({cargoPicked:false,cargoDelivered:false});
+ }
+ setMissionMarkerProgress(run){
+  if(!this.missionMarkers)return;
+  if(this.missionMarkers.pickup)this.missionMarkers.pickup.visible=!run?.cargoPicked;
+  if(this.missionMarkers.delivery)this.missionMarkers.delivery.visible=!!run?.cargoPicked&&!run?.cargoDelivered;
  }
  createCheckpointGates(route){
   const config=ROUTES[route];
