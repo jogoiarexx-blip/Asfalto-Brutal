@@ -1,5 +1,5 @@
 # ASFALTO BRUTAL — Execução do GDD Road Rash 3D + Jailbreak
-Versão 2.0.6 · 30/10/2026
+Versão 2.0.7 · 30/10/2026
 
 ## Situação do projeto
 O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros, IA de tráfego, cinco armas, polícia, garagem, controles e quedas. A evolução preserva essa base em Three.js com HTML e módulos, sem impor migração para Vite.
@@ -13,18 +13,25 @@ O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros
 - [x] Simulação em passo fixo de 60 Hz com limite de acumulação.
 - [x] Testes determinísticos novos e preservação dos controles/armas anteriores.
 
+## Aplicado na 2.0.7
+- [x] Prisão progressiva por policial que cerca a moto parada, com HUD, proteção pós-queda e derrota.
+- [x] Corrigido o retorno ao checkpoint logo após ser perdido (tolerância de 12 m), sem retorno somente ao final.
+- [x] Missão 4 agora exige fuga real registrada (1) e integridade mínima de 35%.
+- [x] Status em tempo real dos objetivos e checkpoints acessível no mobile.
+- [x] Testes de regressão determinísticos e integração Chromium com cenário controlado (não substitui partida completa).
+
 ## Capítulo I — seis missões
 | Missão | Local | Condição principal |
 |---|---|---|
 | 1 · A Primeira Marcha | Costa Fantasma | Pódio |
 | 2 · Acerto de Contas | Costa Fantasma | Derrubar 1 rival e 5º ou melhor |
 | 3 · Fio da Navalha | Serra da Fúria | Não cair, 5º ou melhor |
-| 4 · Fora do Radar | Rota do Deserto | Enfrentar polícia e terminar com 35% da integridade |
+| 4 · Fora do Radar | Rota do Deserto | Despistar polícia 1 vez e terminar com 35% da integridade |
 | 5 · Correio Urgente | Rota do Deserto | 4º ou melhor em 135 s |
 | 6 · Dono da Pista | Serra da Fúria | Pódio, 2 rivais derrubados, no máximo 1 queda |
 
 ## Prioridades seguintes
-1. Testar jogabilidade completa e balancear as seis missões em navegador, com testes reproduzíveis.
+1. Jogar e balancear todas as seis missões do início ao fim, sem teleporte ou cenários controlados nos testes; certificar que é possível concluir todas.
 2. Grafo de estradas com bifurcações e checkpoints por segmento; classificação por distância válida no percurso.
 3. Eventos narrativos e missões realmente específicas (resgate, entrega, escolta, fuga, líder rival).
 4. Modo Patrulha policial, depois Sidecar cooperativo com controle independente.

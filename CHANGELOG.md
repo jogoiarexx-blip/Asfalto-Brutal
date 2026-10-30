@@ -1,3 +1,12 @@
+## 2.0.7 — 30/10/2026 — Cerco policial e correção de checkpoints
+
+- A missão 4 exige uma fuga real registrada no contador (e integridade >=35%).
+- A IA da polícia freia para cercar uma moto parada; detenção com barra e tempo de captura, com imunidade de recuperação.
+- Resultado de prisão separado de queda ou chegada, sem premiação por fuga frustrada.
+- Checkpoints perdidos corrigidos imediatamente após tolerância de 12 metros, sem retorno apenas na chegada.
+- HUD de objetivos e checkpoints persistente no celular.
+- Testes adicionais de regras, regressões e integração no Chromium com estado controlado.
+
 ## 2.0.6 — 30/10/2026 — Campanha original / Jailbreak capítulo I
 
 - Seis missões sequenciais com critérios verificáveis e progresso salvo.

@@ -26,3 +26,15 @@ export function pursuitStep(police, player, dt, roadX, playerRoadX, wanted) {
  const laneOffset=approach(police.laneOffset,targetOffset,dt*(separation<35?3.5:2.6));
  return {speed,laneOffset,z:police.z+speed*dt};
 }
+
+/** Detenção arcade: exige aproximação lateral e longitudinal sustentada em baixa velocidade. */
+export const ARREST_TIME=2.8;
+export function policeArrestStep(seconds,{player,police,protectedRider=false}={},dt=0){
+ const elapsed=clamp(Number.isFinite(dt)?dt:0,0,.05);
+ const old=clamp(Number.isFinite(seconds)?seconds:0,0,ARREST_TIME);
+ const close=!!player&&!!police&&Number.isFinite(player.x)&&Number.isFinite(player.z)&&
+  Number.isFinite(police.x)&&Number.isFinite(police.z)&&
+  Math.abs(player.z-police.z)<5.5&&Math.abs(player.x-police.x)<2.6;
+ const slow=!!player&&!!police&&(player.speed??Infinity)<12&&(police.speed??Infinity)<23;
+ return clamp(old+(close&&slow&&!protectedRider?elapsed:-elapsed*2),0,ARREST_TIME);
+}

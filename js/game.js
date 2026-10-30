@@ -9,7 +9,7 @@ import {createBike,createCar,createPoliceCar,createPoliceBike,setCrashRider,disp
 import {BIKES,chosenBike,loadGarage,saveGarage,garageAction,awardRace,formatMoney} from './garage.js';
 import {pickRivalLane,rivalShouldAttack,aggressionOf} from './ai.js';
 import {crashPose} from './crash-anim.js';
-import {FALL_TIME,RECOVERY_GRACE,dangerousImpact,nextFall,pursuitTrigger,pursuitStep,updateHeat} from './encounters.js';
+import {FALL_TIME,RECOVERY_GRACE,ARREST_TIME,dangerousImpact,nextFall,pursuitTrigger,pursuitStep,updateHeat,policeArrestStep} from './encounters.js';
 import {Input} from './input.js';
 import {AudioSystem} from './audio.js';
 import {WEAPONS, weaponById, weaponForRival, strikeIsActive, sideTowardPlayer, canEnemyStrike, enemyDamage} from './combat.js';
@@ -25,7 +25,7 @@ import {LIGHT_MODES} from './lighting-director.js';
 import {preparePlayerVehicle,ensurePlayerVehicle,playerOutsideView} from './player-visibility.js';
 import {createHeroDebugPanel,updateHeroDebugPanel} from './debug-hero.js';
 import {MISSIONS,missionById,missionUnlocked,loadCampaign,saveCampaign,completeMission} from './jailbreak-campaign.js';
-import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint} from './checkpoints.js';
+import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint,missedCheckpoint} from './checkpoints.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -42,7 +42,7 @@ export class Game{
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.21;
   this.renderer.shadowMap.enabled=false;this.renderer.shadowMap.type=THREE.PCFShadowMap;
   this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.campaign=loadCampaign(this.storage);this.gameMode='free';this.selectedMissionId=MISSIONS[0].id;this.mission=null;this.checkpoints=createCheckpoints();this.simAccum=0;this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.cameraMode=this.readSetting('asfalto-camera-v2','chase',CAMERA_MODES);this.lighting='auto';this.mode='menu';this.cameraDirector=new CameraDirector(this.camera);
-  this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
+  this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.arrestProgress=0;this.arrestGrace=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
   this.heroProbe=new THREE.Vector3();this.heroOutOfViewTime=0;this.heroDiagnosticTick=0;this.bindUI();
@@ -183,9 +183,9 @@ export class Game{
   if(this.mission)this.route=this.mission.route;
   this.checkpoints=createCheckpoints();this.simAccum=0;
   this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
-  this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
+  this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.arrestProgress=0;this.arrestGrace=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
   $('menu').classList.add('hidden');$('finish-screen').classList.add('hidden');$('pause-screen').classList.add('hidden');
-  $('hud').classList.remove('is-hidden');$('course-tag').textContent=ROUTES[this.route].name;$('race-objective').textContent=this.mission?'MISSÃO · '+this.mission.objective:'CORRIDA LIVRE · 3 CHECKPOINTS OBRIGATÓRIOS';this.renderWeapons();this.setTouch();this.audio.start();this.audio.siren(false);this.updateHUD();
+  $('hud').classList.remove('is-hidden');$('course-tag').textContent=ROUTES[this.route].name;$('race-objective').textContent=this.mission?'MISSÃO · '+this.mission.objective:'CORRIDA LIVRE · 3 CHECKPOINTS OBRIGATÓRIOS';this.renderWeapons();$('mission-live').classList.toggle('hidden',!this.mission);this.setTouch();this.audio.start();this.audio.siren(false);this.updateHUD();
   $('countdown').classList.remove('hidden');$('countdown').textContent='3';$('fall-banner').classList.add('hidden');$('speed-lines').classList.remove('active');$('police-status').classList.add('is-hidden');
  }
  setTouch(){const coarse=matchMedia('(pointer:coarse)').matches||innerWidth<640;$('touch-controls').classList.toggle('is-hidden',!coarse||!['countdown','race'].includes(this.mode))}
@@ -197,9 +197,9 @@ export class Game{
   if(this.mode!=='race')return;
   this.mode='finish';$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('finish-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');
   const finished=reason==='finish'&&allCheckpointsPassed(this.checkpoints);
-  $('finish-kicker').textContent=reason==='crash'?'FIM DE PISTA':this.mission?'DESAFIO DA GANGUE':'LINHA DE CHEGADA';
-  $('finish-headline').innerHTML=reason==='crash'?'MOTO<br/><span>DESTRUÍDA.</span>':this.position()<=3?'PÓDIO<br/><span>CONQUISTADO.</span>':'CORRIDA<br/><span>CONCLUÍDA.</span>';
-  const payout=awardRace(this.garage,{place:this.position(),finished,hits:this.hits,escapes:this.escapes,z:this.player.z});
+  $('finish-kicker').textContent=reason==='arrest'?'VOCÊ FOI PRESO':reason==='crash'?'FIM DE PISTA':this.mission?'DESAFIO DA GANGUE':'LINHA DE CHEGADA';
+  $('finish-headline').innerHTML=reason==='arrest'?'FIM DA<br/><span>FUGA.</span>':reason==='crash'?'MOTO<br/><span>DESTRUÍDA.</span>':this.position()<=3?'PÓDIO<br/><span>CONQUISTADO.</span>':'CORRIDA<br/><span>CONCLUÍDA.</span>';
+  const payout=awardRace(this.garage,{place:this.position(),finished,hits:this.hits,escapes:this.escapes,z:reason==='arrest'?0:this.player.z});
   this.garage=payout.garage;let bonus=0;
   $('mission-result').classList.add('hidden');$('mission-result').classList.remove('success');
   if(this.mission){
@@ -207,14 +207,14 @@ export class Game{
    this.campaign=outcome.campaign;saveCampaign(this.storage,this.campaign);bonus=outcome.bonus;
    $('mission-result').classList.remove('hidden');
    $('mission-result').classList.toggle('success',outcome.success);
-   $('mission-result').textContent=outcome.success?(outcome.replay?'MISSÃO REJOGADA · SEM BÔNUS DUPLICADO':'MISSÃO CONCLUÍDA! NOVO DESAFIO DESBLOQUEADO.'):('MISSÃO NÃO CONCLUÍDA · '+outcome.failures.join(' '));
+   $('mission-result').textContent=outcome.success?(outcome.replay?'MISSÃO REJOGADA · SEM BÔNUS DUPLICADO':'MISSÃO CONCLUÍDA! NOVO DESAFIO DESBLOQUEADO.'):('MISSÃO NÃO CONCLUÍDA · '+(reason==='arrest'?'Você foi preso. ':'')+outcome.failures.join(' '));
    if(outcome.success)$('finish-headline').innerHTML='MISSÃO<br/><span>CONCLUÍDA.</span>';
   }
   this.garage.money=Math.min(99999999,this.garage.money+bonus);
   this.earnedLast=payout.amount+bonus;saveGarage(this.storage,this.garage);
   $('final-money').textContent='+ '+formatMoney(this.earnedLast)+' CR';$('final-wallet').textContent='SALDO: '+formatMoney(this.garage.money)+' CR';
   $('final-place').textContent=this.position()+'º';$('final-time').textContent=formatTime(this.elapsed);$('final-hits').textContent=String(this.hits);$('final-falls').textContent=String(this.falls);$('final-escapes').textContent=String(this.escapes);
-  this.audio.tone(reason==='crash'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
+  this.audio.tone(reason==='crash'||reason==='arrest'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
  }
  position(){return rankOf(this.player.z,this.rivals)}
  notify(message){$('toast').textContent=message;$('toast').classList.add('visible');this.toastTimer=1.45}
@@ -242,7 +242,7 @@ export class Game{
   const lane=lanes.find(offset=>others.every(e=>Math.abs(e.z-p.z)>8||Math.abs(e.x-curveAt(p.z,this.route)-offset)>2.6));
   if(lane===undefined)p.z=Math.max(0,p.z-12);
   p.x=curveAt(p.z,this.route)+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.slideVelocity=0;p.tractionLoss=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
-  this.playerFall=null;setCrashRider(this.playerBike,false);ensurePlayerVehicle(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);this.heroOutOfViewTime=0;$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
+  this.playerFall=null;this.arrestGrace=RECOVERY_GRACE;setCrashRider(this.playerBike,false);ensurePlayerVehicle(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);this.heroOutOfViewTime=0;$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
  }
 
  spawnImpactRing(x,y,z,color=0xffef9c){
@@ -299,7 +299,7 @@ export class Game{
   this.heat=updateHeat(this.heat,dt,{policeNear:!!this.police&&Math.abs(this.police.z-p.z)<75});
   if(this.playerFall){
    this.playerFall=nextFall(this.playerFall,dt);
-   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
+   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);if(this.mode!=='race')return;this.resolveRivalContacts();this.resolveTrafficContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
    $('speed-lines').classList.remove('active');this.world.update(p.z,dt,this.lighting);this.updateHUD();this.audio.update(0,false,false);this.audio.siren(!!this.police,this.police?.z-p.z||0);
    $('fall-progress').style.width=`${Math.round(100*(1-this.playerFall.remaining/this.playerFall.total))}%`;
    if(this.playerFall.remaining<=0)this.recoverPlayer();
@@ -315,10 +315,12 @@ export class Game{
   const oldGateCount=this.checkpoints.passed;
   this.checkpoints=advanceCheckpoints(this.checkpoints,movement.old.z,p.z,p.x-curveAt(p.z,this.route),ROAD_HALF);
   if(this.checkpoints.passed>oldGateCount)this.notify('CHECKPOINT '+this.checkpoints.passed+'/'+this.checkpoints.gates.length+' VALIDADO');
+  const missed=missedCheckpoint(this.checkpoints,p.z);
+  if(missed!==null){p.z=missed-22;p.x=curveAt(p.z,this.route);p.speed=Math.min(p.speed,16);p.lateralVelocity=0;p.slideVelocity=0;p.bank=0;this.notify('CHECKPOINT PERDIDO · RETORNANDO AO POSTO')};
   if(movement.offRoad)this.cameraShake=Math.max(this.cameraShake,.045);
   if(movement.railImpact&&this.hurtCooldown<=0)this.hit(11,true,0);
   this.dustClock-=dt;if(movement.offRoad&&p.speed>12&&this.dustClock<=0){this.dustClock=.16;this.spawnDust(p.x,p.z)}
-  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.resolveContacts(movement.old);
+  this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);if(this.mode!=='race')return;this.resolveRivalContacts();this.resolveTrafficContacts();this.resolveContacts(movement.old);
   const skid=skidIntensity({speed:p.speed,steer:p.steer,slip:p.slip,brake,offRoad:movement.offRoad});
   if(skid>.17&&this.skidMarks){this.skidMarks.add(p.x,p.z,p.yaw,skid);if(this.dustClock<=0&&movement.offRoad)this.spawnDust(p.x,p.z)}
   this.updateCombat(dt);this.updatePickups(dt);this.updateEffects(dt);this.updatePlayerModel(dt,movement.boosted);
@@ -488,16 +490,17 @@ export class Game{
   const vehicle=isMoto?createPoliceBike({quality:this.resolvedQuality}):createPoliceCar({quality:this.resolvedQuality});this.configureShadows(vehicle);this.scene.add(vehicle.group);this.addHull(vehicle,isMoto?HULLS.bike:HULLS.car,0xff345f);
   const z=this.player.z-54,laneOffset=clamp((this.player.x-curveAt(this.player.z,this.route))+3.1,-4.9,4.9);
   const e={vehicle,z,x:curveAt(z,this.route)+laneOffset,yaw:headingAt(z,this.route),speed:Math.max(38,this.player.speed*.86),laneOffset,phase:0,attackAge:Infinity,attackSide:0,weaponId:'baton'};if(isMoto)setBikeWeapon(vehicle,'baton');
-  e.old={x:e.x,z:e.z,yaw:e.yaw};vehicle.group.position.set(e.x,0,z);this.police=e;this.policeLost=0;
+  e.old={x:e.x,z:e.z,yaw:e.yaw};vehicle.group.position.set(e.x,0,z);this.police=e;this.policeLost=0;this.arrestProgress=0;
   this.heat=Math.max(this.heat,35);this.notify(isMoto?'MOTO POLICIAL NA SUA COLA!':'VIATURA NA SUA COLA!');this.audio.tone(550,.24,'square',.075);
  }
  dismissPolice(){
   if(!this.police)return;
   this.scene.remove(this.police.vehicle.group);disposeVehicle(this.police.vehicle);this.police=null;
-  this.escapes++;this.policeNext=this.elapsed+32;this.policeLost=0;this.heat=0;this.audio.siren(false);this.notify('VOCÊ DESPISTOU A POLÍCIA!');
+  this.escapes++;this.policeNext=this.elapsed+32;this.policeLost=0;this.arrestProgress=0;this.heat=0;this.audio.siren(false);this.notify('VOCÊ DESPISTOU A POLÍCIA!');
  }
  updatePolice(dt){
-  if(!this.police){if(pursuitTrigger({elapsed:this.elapsed,heat:this.heat,alreadyDeployed:false,nextAllowed:this.policeNext,playerZ:this.player.z}))this.spawnPolice();return}
+  this.arrestGrace=Math.max(0,this.arrestGrace-dt);
+  if(!this.police){this.arrestProgress=0;if(pursuitTrigger({elapsed:this.elapsed,heat:this.heat,alreadyDeployed:false,nextAllowed:this.policeNext,playerZ:this.player.z}))this.spawnPolice();return}
   const e=this.police,p=this.player;e.old={x:e.x,z:e.z,yaw:e.yaw};
   // A fallen officer must not move forward under pursuit physics.
   if(e.fallen>0){
@@ -511,8 +514,11 @@ export class Game{
   const updated=pursuitStep(e,p,dt,curveAt(e.z,this.route),curveAt(p.z,this.route),this.heat);
   const corner=policeCurveTarget(e,p,this.route);
   // Ease down into bends; accelerate back as the curve straightens.
-  e.speed=approach(e.speed,Math.min(updated.speed,corner.curveLimit),dt*(corner.severity>.30?15:12));
-  e.z+=e.speed*dt;e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
+  const canBoxIn=p.speed<12&&!this.playerFall&&Math.abs(p.z-e.z)<12&&Math.abs(p.x-e.x)<3.8;
+  const targetCopSpeed=canBoxIn?Math.max(0,p.speed-2):Math.min(updated.speed,corner.curveLimit);
+  e.speed=approach(e.speed,targetCopSpeed,dt*(canBoxIn?46:corner.severity>.30?15:12));
+  e.z+=e.speed*dt;
+  if(canBoxIn)e.z=Math.min(e.z,p.z+2.4);e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
   e.knock=Math.max(0,(e.knock||0)-dt);e.laneOffset=clamp(e.laneOffset+(e.knockPower||0)*e.knock*dt*2.0,-5.4,5.4);
   e.x=curveAt(e.z,this.route)+e.laneOffset;e.yaw=headingAt(e.z,this.route);
   e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=lerpAngle(e.vehicle.group.rotation.y,e.yaw,Math.min(1,dt*7));
@@ -523,7 +529,9 @@ export class Game{
   e.vehicle.lights[1].material.emissiveIntensity=flash?.17:4.5;
   this.policeLost=(p.z-e.z>125)?this.policeLost+dt:Math.max(0,this.policeLost-dt*1.4);
   e.vehicle.group.visible=Math.abs(e.z-p.z)<390;
-  if(this.policeLost>=7.5)this.dismissPolice();
+  if(this.policeLost>=7.5){this.dismissPolice();return}
+  this.arrestProgress=policeArrestStep(this.arrestProgress,{player:p,police:e,protectedRider:!!this.playerFall||this.arrestGrace>0},dt);
+  if(this.arrestProgress>=ARREST_TIME)this.finish('arrest');
  }
  spawnDust(x,z){
   const low=this.resolvedQuality==='low';const amount=low?2:4;
@@ -583,7 +591,42 @@ export class Game{
    }
   }
  }
- updateHUD(){const p=this.player;$('speed').textContent=String(kmh(p.speed));$('place').innerHTML=`${this.position()}<span>º</span>`;$('timer').textContent=formatTime(this.elapsed);$('health-label').textContent=`${Math.ceil(p.health)}%`;$('health-bar').style.width=`${p.health}%`;$('nitro-label').textContent=`${Math.ceil(p.nitro)}%`;$('nitro-bar').style.width=`${p.nitro}%`;$('weapon-hud').textContent=this.weapon.hud;$('police-status').classList.toggle('is-hidden',!this.police);$('wanted-fill').style.width=`${Math.round(this.heat)}%`;$('police-distance').textContent=this.police?`${Math.round(Math.abs(this.player.z-this.police.z))} M`:'--';const progress=clamp(100*p.z/RACE_LENGTH,0,100);$('progress-fill').style.width=`${progress}%`;$('progress-pin').style.left=`${progress}%`;$('distance').textContent=`${Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')} / ${RACE_LENGTH.toLocaleString('pt-BR')} M`;$('checkpoint-status').textContent='POSTOS '+this.checkpoints.passed+'/'+this.checkpoints.gates.length}
+ updateHUD(){
+  const p=this.player;
+  $('speed').textContent=String(kmh(p.speed));
+  $('place').innerHTML=this.position()+'<span>º</span>';
+  $('timer').textContent=formatTime(this.elapsed);
+  $('health-label').textContent=Math.ceil(p.health)+'%';
+  $('health-bar').style.width=p.health+'%';
+  $('nitro-label').textContent=Math.ceil(p.nitro)+'%';
+  $('nitro-bar').style.width=p.nitro+'%';
+  $('weapon-hud').textContent=this.weapon.hud;
+  $('police-status').classList.toggle('is-hidden',!this.police);
+  $('wanted-fill').style.width=Math.round(this.heat)+'%';
+  $('police-distance').textContent=this.police?Math.round(Math.abs(p.z-this.police.z))+' M':'--';
+  const arrestPercent=Math.round(100*this.arrestProgress/ARREST_TIME);
+  $('arrest-status').classList.toggle('hidden',!this.police||arrestPercent===0);
+  $('arrest-percent').textContent=arrestPercent+'%';
+  $('arrest-fill').style.width=arrestPercent+'%';
+  const progress=clamp(100*p.z/RACE_LENGTH,0,100);
+  $('progress-fill').style.width=progress+'%';
+  $('progress-pin').style.left=progress+'%';
+  $('distance').textContent=Math.min(RACE_LENGTH,Math.floor(p.z)).toLocaleString('pt-BR')+' / '+RACE_LENGTH.toLocaleString('pt-BR')+' M';
+  const count=this.checkpoints.passed+'/'+this.checkpoints.gates.length;
+  $('checkpoint-status').textContent='POSTOS '+count;
+  const pending=nextCheckpoint(this.checkpoints);
+  $('stage-status').textContent='POSTOS '+count+(pending!==null?' · PRÓXIMO '+Math.max(0,Math.ceil(pending-p.z))+' M':' · RUMO À CHEGADA');
+  if(this.mission){
+   const m=this.mission,parts=[];
+   if(m.maxPlace)parts.push('META '+m.maxPlace+'º');
+   if(m.minHits)parts.push('RIVAIS '+this.hits+'/'+m.minHits);
+   if(m.minEscapes)parts.push('FUGAS '+this.escapes+'/'+m.minEscapes);
+   if(m.minHealth)parts.push('MOTO '+Math.ceil(p.health)+'% / '+m.minHealth+'%');
+   if(m.maxFalls!==undefined)parts.push('QUEDAS '+this.falls+'/'+m.maxFalls);
+   if(m.timeLimit)parts.push('TEMPO '+Math.max(0,Math.ceil(m.timeLimit-this.elapsed))+' S');
+   $('mission-live').textContent=parts.join(' · ');
+  }
+ }
  handleMenuGamepad(){
   const buttons=this.input.consumeMenu();
   if(this.mode==='menu'){

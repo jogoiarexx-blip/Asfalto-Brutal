@@ -1,8 +1,21 @@
+# ASFALTO BRUTAL v2.0.7 — Perseguição e checkpoints aprimorados
+
+**Atualização da campanha existente, preservando as três pistas, garagem e cinco armas.**
+
+- A missão Fora do Radar agora exige **despistar a polícia de verdade** (uma fuga registrada) e chegar com pelo menos 35% de integridade.
+- Quando o jogador desacelera e fica encurralado, a polícia consegue parar e realizar uma **detenção progressiva** (2,8 s em baixa velocidade). A barra e o resultado "Você foi preso" estão integrados ao HUD.
+- Existe imunidade temporária após se recuperar de uma queda; reacelerar ou se afastar interrompe o cerco.
+- Se um checkpoint for ultrapassado fora da pista, o jogo reposiciona a moto após uma tolerância de 12 metros, **sem exigir que o jogador percorra o resto da pista**.
+- Status em tempo real dos objetivos, contador de checkpoints visível no celular, testes unitários e teste de integração com navegador controlado.
+- O teste de integração utiliza posições e resultados controlados: não deve ser anunciado como uma corrida real jogada do início ao fim.
+
+## Versão anterior
+
 # ASFALTO BRUTAL v2.0.6 — Campanha Jailbreak (Capítulo I)
 
 Implementação incremental do GDD **Fuga no Asfalto** sobre a base existente. O jogo mantém os modos, armas, IA, motos e três pistas anteriores; não substitui o projeto.
 
-- **Novo menu de campanha** com seis missões desbloqueáveis em sequência e objetivos verificáveis: pódio, combate, não cair, sobrevivência à perseguição policial, contra o relógio e desafio final de gangue.
+- **Novo menu de campanha** com seis missões desbloqueáveis em sequência e objetivos verificáveis: pódio, combate, não cair, fuga da perseguição policial, contra o relógio e desafio final de gangue.
 - **Três checkpoints por corrida**: o piloto deve cruzar os portais na ordem. Chegar com posto pendente reposiciona o jogador para tentar novamente.
 - **Recompensas únicas** por missão, sem duplicação ao rejogá-la, e progresso salvo em `localStorage` separado da garagem.
 - A missão de perseguição inicia com polícia ativa. Os outros desafios usam a pista e a lógica de trânsito/combatente já existentes.
