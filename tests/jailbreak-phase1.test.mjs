@@ -15,7 +15,7 @@ assert.equal(evaluateMission(MISSIONS[1],{finished:true,place:5,hits:1}).success
 assert.equal(evaluateMission(MISSIONS[2],{finished:true,place:4,falls:1}).success,false);
 assert.equal(evaluateMission(MISSIONS[2],{finished:true,place:4,falls:0}).success,true);
 assert.equal(evaluateMission(MISSIONS[3],{finished:true,place:7,health:20}).success,false);
-assert.equal(evaluateMission(MISSIONS[3],{finished:true,place:7,health:40}).success,true);
+assert.equal(evaluateMission(MISSIONS[3],{finished:true,place:7,health:40,escapes:1}).success,true);
 assert.equal(evaluateMission(MISSIONS[4],{finished:true,place:4,time:135}).success,true);
 assert.equal(evaluateMission(MISSIONS[4],{finished:true,place:4,time:135.01}).success,false);
 assert.equal(evaluateMission(MISSIONS[5],{finished:true,place:3,hits:2,falls:1}).success,true);
