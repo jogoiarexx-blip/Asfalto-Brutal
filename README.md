@@ -1,3 +1,20 @@
+# ASFALTO BRUTAL v2.0.8 — Estradas alternativas jogáveis
+
+Evolução do GDD *Road Rash 3D + Jailbreak*: a **Costa Fantasma**, a **Rota do Deserto** e a **Serra da Fúria** recebem agora **duas bifurcações cada**, num total de seis ramais reais em 3D.
+
+- Cada desvio se afasta e retorna à via principal, com asfalto, linhas, sinalização, acostamento e trechos de guardrails próprios.
+- A moto **não é teleportada** para a via secundária: sua física seleciona o corredor mais próximo com histerese; direção, derrapagem, amortecimento e limites laterais seguem ativos.
+- A câmera acompanha a curvatura da rota selecionada, inclusive durante queda e recuperação.
+- Trânsito e seis rivais seguem na estrada principal; as alternativas permitem escolher um caminho de ultrapassagem diferente, antes dos checkpoints.
+- As três verificações de checkpoint continuam entre as junções. Progresso de ranking é limitado ao próximo posto ainda não validado.
+- Foram afastadas árvores, prédios e portais para evitar bloqueios dos desvios.
+- O HUD mostra quando a bifurcação está ativa e qual rota foi escolhida.
+- Testes Node e Chromium WebGL demonstram geometria, mudança física de caminho e retorno ao corredor principal.
+  
+**Limites da revisão:** há dois ramais opcionais por cenário, mas ainda não existe uma cidade inteira em grafo de ruas, missão exclusiva de rota nem trânsito de IA trafegando nos ramais. A certificação de uma corrida completa feita por um jogador continua pendente.
+
+## Histórico anterior
+
 # ASFALTO BRUTAL v2.0.7 — Perseguição e checkpoints aprimorados
 
 **Atualização da campanha existente, preservando as três pistas, garagem e cinco armas.**
