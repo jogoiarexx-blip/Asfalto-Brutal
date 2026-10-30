@@ -87,5 +87,27 @@
 .hero-debug{position:absolute;right:12px;top:125px;z-index:9;width:min(400px,93vw);max-height:65vh;overflow:auto;white-space:pre-wrap;pointer-events:auto;background:#061322ef;color:#c2fcff;border:1px solid #6aedd3;box-shadow:0 8px 45px #0009;padding:12px;font:12px/1.35 ui-monospace,Consolas,monospace}
 @media(max-width:680px){.hero-debug{top:105px;right:4px;font-size:10px}}
 
+/* v2.0.6: campanha original e checkpoint claramente visivel. */
+.game-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px}
+.mode-option{padding:12px 8px;border:1px solid #69878d;background:#0c1c2b;color:#cbdbe2;font:900 16px 'Barlow Condensed',Impact,sans-serif;letter-spacing:1.3px}
+.mode-option.selected{background:#293b28;color:var(--acid);border-color:var(--acid)}
+.mode-option:hover{border-color:#d8eeeb}
+.campaign-panel{padding:12px;margin:0 0 14px;background:#091928;border:1px solid #78d1cd55}
+.campaign-caption{display:flex;justify-content:space-between;font:900 19px 'Barlow Condensed',Impact,sans-serif;color:var(--acid);letter-spacing:1px}
+.campaign-panel>p{margin:5px 0 11px;color:#b5c8d3;font-size:12px}
+.campaign-missions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.campaign-missions button{padding:9px 10px;border:1px solid #78929f60;background:#0b2433;color:#edf8fb;text-align:left;display:flex;gap:6px;flex-direction:column}
+.campaign-missions button strong{font:900 15px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.5px}
+.campaign-missions button small{font:700 11px 'Barlow Condensed',Impact,sans-serif;color:#acc2ca}
+.campaign-missions button.selected{border-color:var(--acid);background:#24362c}
+.campaign-missions button.locked{opacity:.45;cursor:not-allowed}
+.campaign-missions button.completed small{color:#dfff50}
+.mission-brief{margin-top:9px;font:800 13px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.5px;line-height:1.5;color:#e2f5db;min-height:19px}
+.race-objective{margin-top:10px;padding:6px 8px;width:max-content;max-width:320px;background:#071523c9;border-left:3px solid var(--acid);font:800 12px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.5px}
+.checkpoint-status{color:#e2fff1;white-space:nowrap}
+.mission-result{font:800 17px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.5px;border:1px solid #9abbb55c;background:#0b2031;padding:12px;line-height:1.4;margin:12px 0}
+.mission-result.success{border-color:var(--acid);color:var(--acid)}
+@media(max-width:800px){.race-objective{font-size:10px;max-width:210px;margin-top:5px}.campaign-missions button strong{font-size:13px}}
+@media(max-width:550px){.campaign-missions{grid-template-columns:1fr}.game-modes{gap:4px}.mode-option{font-size:13px;padding:9px 4px}.checkpoint-status{display:none}.race-objective{max-width:160px;font-size:9px}}
 /* v2.0.4: only shown when GPU fails to write motorcycle pixels. */
 
