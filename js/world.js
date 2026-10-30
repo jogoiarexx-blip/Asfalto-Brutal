@@ -79,8 +79,8 @@ export class RoadWorld{
   // Rocky silhouettes add depth behind the shoulder without imported assets.
   const mountainCount=this.quality==='low'?40:105;const hills=this.add(new THREE.InstancedMesh(new THREE.ConeGeometry(1,1,4),mat(config.mountain),mountainCount));hills.instanceMatrix.setUsage(THREE.StaticDrawUsage);
   for(let i=0;i<mountainCount;i++){const z=i/(mountainCount-1)*(RACE_LENGTH+360)-80,side=i%2?-1:1;const x=curveAt(z,route)+side*(90+random()*110);const height=route==='highlands'?40+random()*95:20+random()*65;placeInstance(hills,i,x,height*.3-1,z,25+random()*39,height,24+random()*39,random()*Math.PI)}hills.instanceMatrix.needsUpdate=true;
-  const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,hide?.001:1,hide?.001:1,hide?.001:1,headingAt(z,route))}rail.instanceMatrix.needsUpdate=true;
-  const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z,hide?.001:1,hide?.001:1,hide?.001:1)}posts.instanceMatrix.needsUpdate=true;
+  const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,hide?0.001:1,hide?0.001:1,hide?0.001:1,headingAt(z,route))}rail.instanceMatrix.needsUpdate=true;
+  const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z,hide?0.001:1,hide?0.001:1,hide?0.001:1)}posts.instanceMatrix.needsUpdate=true;
   for(let z=260;z<RACE_LENGTH;z+=490){this.createSign(z,config,route)}
   this.createFinish(route);this.createCheckpointGates(route);this.createRoadsideDetail(random);this.architecture=buildRoadsideArchitecture(this);
   const sunBall=this.add(new THREE.Mesh(new THREE.SphereGeometry(20,16,8),new THREE.MeshBasicMaterial({color:route==='desert'?0xffd69b:0xffeac5,fog:false})));sunBall.position.set(-150,110,230);this.sunBall=sunBall;
@@ -148,6 +148,24 @@ export class RoadWorld{
     placeInstance(markers,i,roadCenter(route,z,fork.id),.069,z,1,1,1,roadHeading(route,z,fork.id));
    }
    markers.instanceMatrix.needsUpdate=true;
+   // Raízes visuais dos limites laterais somente depois que os caminhos se separam.
+   const sideCount=Math.floor((fork.end-fork.start)/19)*2;
+   const rails=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.16,.30,16),new THREE.MeshLambertMaterial({color:0x99a8ac}),sideCount));
+   const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.08,.14),new THREE.MeshLambertMaterial({color:0x687d86}),sideCount));
+   rails.name='FORK_'+fork.id+'_RAILS';
+   let nRail=0;
+   for(let z=fork.start+9;nRail<sideCount;z+=19){
+    for(const side of [-1,1]){
+     const cleared=Math.abs(roadCenter(route,z,fork.id)-curveAt(z,route))>ROAD_HALF*2+4;
+     const visible=cleared?1:.001;
+     const x=roadCenter(route,z,fork.id)+side*8.4,heading=roadHeading(route,z,fork.id);
+     placeInstance(rails,nRail,x,.55,z,visible,visible,visible,heading);
+     placeInstance(posts,nRail,x,.30,z,visible,visible,visible);
+     nRail++;
+     if(nRail>=sideCount)break;
+    }
+   }
+   rails.instanceMatrix.needsUpdate=true;posts.instanceMatrix.needsUpdate=true;
    const sign=new THREE.Group();
    const base=new THREE.Mesh(new THREE.BoxGeometry(.17,3.7,.20),new THREE.MeshLambertMaterial({color:0x596872}));
    base.position.y=1.85;sign.add(base);
