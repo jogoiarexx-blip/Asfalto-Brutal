@@ -1,7 +1,7 @@
 name: Asfalto Brutal motorcycle WebGL integration
 on:
   push:
-    branches: [main, feat/road-forks-v208]
+    branches: [main, feat/npc-forks-v209]
   workflow_dispatch:
 jobs:
   webgl:
@@ -24,6 +24,7 @@ jobs:
           node tests/browser-render.test.mjs
           node tests/jailbreak-browser.test.mjs
           node tests/road-forks-browser.test.mjs
+          node tests/npc-forks-browser.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -31,4 +32,5 @@ jobs:
           path: |
             tests/browser-render.png
             tests/road-fork-render.png
+            tests/npc-fork-render.png
           if-no-files-found: ignore
