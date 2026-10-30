@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,curveAt,headingAt} from './config.js';
+import {CHECKPOINT_DISTANCES} from './checkpoints.js';
 import {buildRoadsideArchitecture} from './roadside-architecture.js';
 import {lightingFrame,lightBlend} from './lighting-director.js';
 const UP=new THREE.Vector3(0,1,0);const MATRIX=new THREE.Matrix4();const Q=new THREE.Quaternion();const V=new THREE.Vector3();const S=new THREE.Vector3();
@@ -70,7 +71,7 @@ export class RoadWorld{
   const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,1,1,1,headingAt(z,route));rail.instanceMatrix.needsUpdate=true;
   const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z);posts.instanceMatrix.needsUpdate=true;
   for(let z=260;z<RACE_LENGTH;z+=490){this.createSign(z,config,route)}
-  this.createFinish(route);this.createRoadsideDetail(random);this.architecture=buildRoadsideArchitecture(this);
+  this.createFinish(route);this.createCheckpointGates(route);this.createRoadsideDetail(random);this.architecture=buildRoadsideArchitecture(this);
   const sunBall=this.add(new THREE.Mesh(new THREE.SphereGeometry(20,16,8),new THREE.MeshBasicMaterial({color:route==='desert'?0xffd69b:0xffeac5,fog:false})));sunBall.position.set(-150,110,230);this.sunBall=sunBall;
  }
  /** Geometry is batched with InstancedMesh: extra landmarks without extra draw calls per item. */
@@ -108,6 +109,29 @@ export class RoadWorld{
     const z=random()*(RACE_LENGTH+400)-90;
     placeInstance(waves,i,-130-random()*360,-.153,z,1+random()*3,1,1+random()*5);
    }waves.instanceMatrix.needsUpdate=true;
+  }
+ }
+
+ createCheckpointGates(route){
+  const config=ROUTES[route];
+  for(const [index,z] of CHECKPOINT_DISTANCES.entries()){
+   const gate=new THREE.Group();
+   const postMat=new THREE.MeshLambertMaterial({color:0x28434f});
+   const glow=new THREE.MeshBasicMaterial({color:config.edge});
+   for(const side of [-1,1]){
+    const post=new THREE.Mesh(new THREE.BoxGeometry(.24,4.6,.24),postMat);
+    post.position.set(side*(ROAD_HALF+.6),2.3,0);gate.add(post);
+    const strip=new THREE.Mesh(new THREE.BoxGeometry(.12,2.8,.10),glow);
+    strip.position.set(side*(ROAD_HALF+.6),3,0.17);gate.add(strip);
+   }
+   const beam=new THREE.Mesh(new THREE.BoxGeometry(ROAD_HALF*2+1.4,.32,.35),postMat);
+   beam.position.set(0,4.6,0);gate.add(beam);
+   const panel=new THREE.Mesh(new THREE.PlaneGeometry(2.65,.68),new THREE.MeshBasicMaterial({color:config.edge,side:THREE.DoubleSide}));
+   panel.position.set(0,4.62,.22);gate.add(panel);
+   const tag=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.25),new THREE.MeshBasicMaterial({color:0x14232a,side:THREE.DoubleSide}));
+   tag.position.set(0,4.63,.232);gate.add(tag);
+   gate.name='CHECKPOINT_'+(index+1);
+   gate.position.set(curveAt(z,route),0,z);gate.rotation.y=headingAt(z,route);this.add(gate);
   }
  }
  createFinish(route){
