@@ -16,3 +16,9 @@ export function advanceCheckpoints(state,previousZ,nextZ,lateralDistance,roadHal
 }
 export const allCheckpointsPassed=state=>!!state&&state.passed===state.gates.length;
 export const nextCheckpoint=state=>state.gates[state.passed]??null;
+
+/** Um checkpoint perdido não força o jogador a chegar até o final da pista para retornar. */
+export function missedCheckpoint(state,playerZ,graceMeters=12){
+ const gate=nextCheckpoint(state);
+ return Number.isFinite(gate)&&Number.isFinite(playerZ)&&playerZ>gate+graceMeters?gate:null;
+}
