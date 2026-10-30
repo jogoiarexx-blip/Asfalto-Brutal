@@ -638,7 +638,7 @@ export class Game{
    if(m.minHealth)parts.push('MOTO '+Math.ceil(p.health)+'% / '+m.minHealth+'%');
    if(m.maxFalls!==undefined)parts.push('QUEDAS '+this.falls+'/'+m.maxFalls);
    if(m.timeLimit)parts.push('TEMPO '+Math.max(0,Math.ceil(m.timeLimit-this.elapsed))+' S');
-   parts.push(...missionRunStatus(m,this.missionRun));
+   parts.push(...missionRunStatus(m,this.missionRun,p.z));
    $('mission-live').textContent=parts.join(' · ');
   }
  }
