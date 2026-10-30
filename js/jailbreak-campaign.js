@@ -1,4 +1,4 @@
-/** Capitulo I: missões autorais, verificáveis e independentes do renderer. */
+/** Capítulos I e II: missões autorais, verificáveis e independentes do renderer. */
 export const CAMPAIGN_KEY='asfalto-brutal-campaign-v1';
 export const MISSIONS=Object.freeze([
  {id:'primeira-marcha',name:'01 · A PRIMEIRA MARCHA',route:'coast',objective:'Chegue entre os 3 primeiros.',maxPlace:3,bonus:550},
@@ -6,7 +6,10 @@ export const MISSIONS=Object.freeze([
  {id:'fio-da-navalha',name:'03 · FIO DA NAVALHA',route:'highlands',objective:'Termine entre os 5 primeiros sem cair.',maxPlace:5,maxFalls:0,bonus:850},
  {id:'fora-do-radar',name:'04 · FORA DO RADAR',route:'desert',objective:'Despiste a polícia 1 vez e chegue com pelo menos 35% de integridade.',minEscapes:1,minHealth:35,policeStart:true,bonus:1000},
  {id:'correio-urgente',name:'05 · CORREIO URGENTE',route:'desert',objective:'Termine entre os 4 primeiros em até 135 segundos.',maxPlace:4,timeLimit:135,bonus:1200},
- {id:'dono-da-pista',name:'06 · DONO DA PISTA',route:'highlands',objective:'Chegue ao pódio, derrube 2 rivais e caia no máximo 1 vez.',maxPlace:3,minHits:2,maxFalls:1,bonus:1700}
+ {id:'dono-da-pista',name:'06 · DONO DA PISTA',route:'highlands',objective:'Chegue ao pódio, derrube 2 rivais e caia no máximo 1 vez.',maxPlace:3,minHits:2,maxFalls:1,bonus:1700},
+ {id:'correio-enseada',name:'07 · CORREIO DA ENSEADA',route:'coast',objective:'Entre na Enseada, recolha a encomenda no ramal, entregue no fim da pista e chegue inteiro.',requiredForks:['enseada'],cargo:{pickup:{pathId:'enseada',z:535},delivery:{pathId:'main',z:3300}},minHealth:25,bonus:1900},
+ {id:'sombra-do-canion',name:'08 · SOMBRA DO CÂNION',route:'desert',objective:'Tome o desvio do Cânion e despiste a polícia pelo menos uma vez antes de terminar.',requiredForks:['canion'],minEscapes:1,policeStart:true,bonus:2200},
+ {id:'pacto-das-serras',name:'09 · PACTO DAS SERRAS',route:'highlands',objective:'Utilize a Pedreira e a Colina, derrube um rival e termine em 5º ou melhor.',requiredForks:['pedreira','colina'],minHits:1,maxPlace:5,bonus:2500}
 ].map(m=>Object.freeze(m)));
 const base=()=>({version:1,completed:[]});
 export function missionById(id){return MISSIONS.find(m=>m.id===id)||null}
@@ -40,6 +43,8 @@ export function evaluateMission(mission,stats={}){
  if(mission.minEscapes && !(stats.escapes>=mission.minEscapes))failures.push('Fugas da polícia: '+(stats.escapes||0)+'/'+mission.minEscapes+'.');
  if(mission.maxFalls!==undefined && !(stats.falls<=mission.maxFalls))failures.push('Limite de quedas: '+mission.maxFalls+'.');
  if(mission.timeLimit && !(Number.isFinite(stats.time)&&stats.time<=mission.timeLimit))failures.push('Tempo limite: '+mission.timeLimit+' segundos.');
+ if(mission.requiredForks)for(const id of mission.requiredForks){if(!stats.visitedForks?.[id])failures.push('Desvio obrigatório não visitado: '+id+'.')}
+ if(mission.cargo&&!stats.cargoDelivered)failures.push('Encomenda não entregue no destino.');
  return {success:failures.length===0,failures};
 }
 export function completeMission(campaign,id,stats){
