@@ -299,7 +299,7 @@ export class Game{
   this.heat=updateHeat(this.heat,dt,{policeNear:!!this.police&&Math.abs(this.police.z-p.z)<75});
   if(this.playerFall){
    this.playerFall=nextFall(this.playerFall,dt);
-   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);this.resolveRivalContacts();this.resolveTrafficContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
+   this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.updateAI(dt);this.updateTraffic(dt);this.updatePolice(dt);if(this.mode!=='race')return;this.resolveRivalContacts();this.resolveTrafficContacts();this.updateEffects(dt);this.updatePlayerModel(dt,false);
    $('speed-lines').classList.remove('active');this.world.update(p.z,dt,this.lighting);this.updateHUD();this.audio.update(0,false,false);this.audio.siren(!!this.police,this.police?.z-p.z||0);
    $('fall-progress').style.width=`${Math.round(100*(1-this.playerFall.remaining/this.playerFall.total))}%`;
    if(this.playerFall.remaining<=0)this.recoverPlayer();
@@ -514,8 +514,11 @@ export class Game{
   const updated=pursuitStep(e,p,dt,curveAt(e.z,this.route),curveAt(p.z,this.route),this.heat);
   const corner=policeCurveTarget(e,p,this.route);
   // Ease down into bends; accelerate back as the curve straightens.
-  e.speed=approach(e.speed,Math.min(updated.speed,corner.curveLimit),dt*(corner.severity>.30?15:12));
-  e.z+=e.speed*dt;e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
+  const canBoxIn=p.speed<12&&!this.playerFall&&Math.abs(p.z-e.z)<12&&Math.abs(p.x-e.x)<3.8;
+  const targetCopSpeed=canBoxIn?Math.max(0,p.speed-2):Math.min(updated.speed,corner.curveLimit);
+  e.speed=approach(e.speed,targetCopSpeed,dt*(canBoxIn?46:corner.severity>.30?15:12));
+  e.z+=e.speed*dt;
+  if(canBoxIn)e.z=Math.min(e.z,p.z+2.4);e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
   e.knock=Math.max(0,(e.knock||0)-dt);e.laneOffset=clamp(e.laneOffset+(e.knockPower||0)*e.knock*dt*2.0,-5.4,5.4);
   e.x=curveAt(e.z,this.route)+e.laneOffset;e.yaw=headingAt(e.z,this.route);
   e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=lerpAngle(e.vehicle.group.rotation.y,e.yaw,Math.min(1,dt*7));
