@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {curveAt,headingAt} from './config.js';
 import {architectureLayout} from './roadside-architecture-layout.js';
+import {roadsideClearance} from './road-network.js';
 
 function staticInstanced(scene,geo,mat,count){
  const o=new THREE.InstancedMesh(geo,mat,count);o.instanceMatrix.setUsage(THREE.StaticDrawUsage);o.frustumCulled=false;scene.add(o);return o;
@@ -20,7 +21,7 @@ export function buildRoadsideArchitecture(world){
   const roof=staticInstanced(scene,route==='highlands'?new THREE.ConeGeometry(1,1,4):new THREE.BoxGeometry(1,1,1),roofs,n);
   const windows=staticInstanced(scene,new THREE.BoxGeometry(1,1,1),windowMat,n*4);
   for(let i=0;i<n;i++){
-   const l=plan.landmarks[i],x=curveAt(l.z,route)+l.side*l.offset,yaw=headingAt(l.z,route);
+   const l=plan.landmarks[i],offset=roadsideClearance(route,l.z,l.side,l.offset+3),x=curveAt(l.z,route)+l.side*offset,yaw=headingAt(l.z,route);
    set(buildings,i,x,l.height*.5-.13,l.z,l.width,l.height,5.5,yaw);
    set(roof,i,x,l.height+(.45),l.z,l.width*1.12,route==='highlands'?2:0.9,6.1,yaw);
    for(let k=0;k<4;k++){
