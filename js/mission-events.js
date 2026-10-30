@@ -38,11 +38,17 @@ export function advanceMissionRun(mission,run,player,previousZ){
  }
  return {run:result,events};
 }
-export function missionRunStatus(mission,run){
+export function missionRunStatus(mission,run,playerZ=NaN){
  if(!mission)return [];
  const messages=[];
  if(mission.requiredForks)for(const id of mission.requiredForks)
   messages.push('DESVIO '+id.toUpperCase()+' '+(run?.visitedForks?.[id]?'OK':'PENDENTE'));
- if(mission.cargo)messages.push(run?.cargoDelivered?'ENTREGA OK':run?.cargoPicked?'CARGA A BORDO':'ENCOMENDA PENDENTE');
+ if(mission.cargo){
+  messages.push(run?.cargoDelivered?'ENTREGA OK':run?.cargoPicked?'CARGA A BORDO':'ENCOMENDA PENDENTE');
+  if(!run?.cargoDelivered&&Number.isFinite(playerZ)){
+   const target=run?.cargoPicked?mission.cargo.delivery:mission.cargo.pickup;
+   messages.push((run?.cargoPicked?'DESTINO':'COLETA')+' '+Math.max(0,Math.ceil(target.z-playerZ))+' M');
+  }
+ }
  return messages;
 }
