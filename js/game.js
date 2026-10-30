@@ -268,7 +268,7 @@ export class Game{
    for(const e of [...this.rivals,...this.traffic,...(this.police?[this.police]:[])]){
     if(e.fallen>0||Math.abs(e.z-this.player.z)>5)continue;
     const kind=['police','car'].includes(e.vehicle.kind)?'car':'bike';
-    const metric=strikeCandidate({...this.player,yaw:headingAt(this.player.z,this.route)},e,strike.side,kind,strike.weapon);
+    const metric=strikeCandidate({...this.player,yaw:roadHeading(this.route,this.player.z,this.player.pathId)},e,strike.side,kind,strike.weapon);
     if(metric!==null&&metric<closest){closest=metric;target=e}
    }
    if(target){
@@ -494,8 +494,9 @@ export class Game{
   if(this.police)return;
   const isMoto=(this.policePatrolCount++%2===0);
   const vehicle=isMoto?createPoliceBike({quality:this.resolvedQuality}):createPoliceCar({quality:this.resolvedQuality});this.configureShadows(vehicle);this.scene.add(vehicle.group);this.addHull(vehicle,isMoto?HULLS.bike:HULLS.car,0xff345f);
-  const z=this.player.z-54,laneOffset=clamp((this.player.x-curveAt(this.player.z,this.route))+3.1,-4.9,4.9);
-  const e={vehicle,z,x:curveAt(z,this.route)+laneOffset,yaw:headingAt(z,this.route),speed:Math.max(38,this.player.speed*.86),laneOffset,phase:0,attackAge:Infinity,attackSide:0,weaponId:'baton'};if(isMoto)setBikeWeapon(vehicle,'baton');
+  const z=this.player.z-54,policePath=spawnNpcPath({route:this.route,z,role:'police',playerPath:this.player.pathId,playerZ:this.player.z});
+  const laneOffset=clamp((this.player.x-roadCenter(this.route,this.player.z,this.player.pathId))+3.1,-4.9,4.9);
+  const e={vehicle,z,pathId:policePath,x:roadCenter(this.route,z,policePath)+laneOffset,yaw:roadHeading(this.route,z,policePath),speed:Math.max(38,this.player.speed*.86),laneOffset,phase:0,attackAge:Infinity,attackSide:0,weaponId:'baton'};if(isMoto)setBikeWeapon(vehicle,'baton');
   e.old={x:e.x,z:e.z,yaw:e.yaw};vehicle.group.position.set(e.x,0,z);this.police=e;this.policeLost=0;this.arrestProgress=0;
   this.heat=Math.max(this.heat,35);this.notify(isMoto?'MOTO POLICIAL NA SUA COLA!':'VIATURA NA SUA COLA!');this.audio.tone(550,.24,'square',.075);
  }
@@ -524,11 +525,13 @@ export class Game{
   const targetCopSpeed=canBoxIn?Math.max(0,p.speed-2):Math.min(updated.speed,corner.curveLimit);
   e.speed=approach(e.speed,targetCopSpeed,dt*(canBoxIn?46:corner.severity>.30?15:12));
   e.z+=e.speed*dt;
-  if(canBoxIn)e.z=Math.min(e.z,p.z+2.4);e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
+  if(canBoxIn)e.z=Math.min(e.z,p.z+2.4);
+  e.pathId=npcRoadChoice({route:this.route,z:e.z,oldZ:e.old.z,pathId:e.pathId,role:'police',playerPath:p.pathId,playerZ:p.z});
+  e.laneOffset=approach(e.laneOffset,corner.desiredOffset,dt*(corner.severity>.4?3.6:4.3));
   e.knock=Math.max(0,(e.knock||0)-dt);e.laneOffset=clamp(e.laneOffset+(e.knockPower||0)*e.knock*dt*2.0,-5.4,5.4);
-  e.x=curveAt(e.z,this.route)+e.laneOffset;e.yaw=headingAt(e.z,this.route);
+  e.x=roadCenter(this.route,e.z,e.pathId)+e.laneOffset;e.yaw=roadHeading(this.route,e.z,e.pathId);
   e.vehicle.group.position.set(e.x,0,e.z);e.vehicle.group.rotation.y=lerpAngle(e.vehicle.group.rotation.y,e.yaw,Math.min(1,dt*7));
-  if(e.vehicle.kind==='policeBike'){e.vehicle.lean.rotation.z=lerp(e.vehicle.lean.rotation.z,clamp((updated.laneOffset-(e.old.x-curveAt(e.old.z,this.route)))*.12,-.22,.22),Math.min(1,dt*9));e.attackCD=(e.attackCD??2.5)-dt;e.attackAge+=dt;const weapon=WEAPONS.baton;if(canEnemyStrike(e,p,weapon,{playerDown:!!this.playerFall})&&strikeCandidate({...e,yaw:e.yaw},p,sideTowardPlayer(e.x,p.x),'bike',weapon)!==null){e.attackCD=3.6;e.attackAge=0;e.attackSide=sideTowardPlayer(e.x,p.x);if(this.hit(enemyDamage(weapon,.85),false,0,e.attackSide))this.notify('POLICIAL ATACOU COM CASSETETE!')}if(e.vehicle.group.visible)animateRider(e.vehicle,{dt,time:this.elapsed,attackAge:e.attackAge,attackSide:e.attackSide,speed:e.speed})}
+  if(e.vehicle.kind==='policeBike'){e.vehicle.lean.rotation.z=lerp(e.vehicle.lean.rotation.z,clamp((updated.laneOffset-(e.old.x-roadCenter(this.route,e.old.z,e.pathId)))*.12,-.22,.22),Math.min(1,dt*9));e.attackCD=(e.attackCD??2.5)-dt;e.attackAge+=dt;const weapon=WEAPONS.baton;if(canEnemyStrike(e,p,weapon,{playerDown:!!this.playerFall})&&strikeCandidate({...e,yaw:e.yaw},p,sideTowardPlayer(e.x,p.x),'bike',weapon)!==null){e.attackCD=3.6;e.attackAge=0;e.attackSide=sideTowardPlayer(e.x,p.x);if(this.hit(enemyDamage(weapon,.85),false,0,e.attackSide))this.notify('POLICIAL ATACOU COM CASSETETE!')}if(e.vehicle.group.visible)animateRider(e.vehicle,{dt,time:this.elapsed,attackAge:e.attackAge,attackSide:e.attackSide,speed:e.speed})}
   for(const wheel of e.vehicle.wheels)wheel.rotation.x+=e.speed*dt/.43;
   const flash=Math.sin(this.elapsed*20)>0;
   e.vehicle.lights[0].material.emissiveIntensity=flash?4.5:.17;
