@@ -24,6 +24,8 @@ import {CameraDirector,frameCamera,CAMERA_MODES,nextCameraMode} from './camera-d
 import {LIGHT_MODES} from './lighting-director.js';
 import {preparePlayerVehicle,ensurePlayerVehicle,playerOutsideView} from './player-visibility.js';
 import {createHeroDebugPanel,updateHeroDebugPanel} from './debug-hero.js';
+import {MISSIONS,missionById,missionUnlocked,loadCampaign,saveCampaign,completeMission} from './jailbreak-campaign.js';
+import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint} from './checkpoints.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -39,12 +41,12 @@ export class Game{
   this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'high-performance',alpha:false});
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.21;
   this.renderer.shadowMap.enabled=false;this.renderer.shadowMap.type=THREE.PCFShadowMap;
-  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.cameraMode=this.readSetting('asfalto-camera-v2','chase',CAMERA_MODES);this.lighting='auto';this.mode='menu';this.cameraDirector=new CameraDirector(this.camera);
+  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.campaign=loadCampaign(this.storage);this.gameMode='free';this.selectedMissionId=MISSIONS[0].id;this.mission=null;this.checkpoints=createCheckpoints();this.simAccum=0;this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.cameraMode=this.readSetting('asfalto-camera-v2','chase',CAMERA_MODES);this.lighting='auto';this.mode='menu';this.cameraDirector=new CameraDirector(this.camera);
   this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
   this.heroProbe=new THREE.Vector3();this.heroOutOfViewTime=0;this.heroDiagnosticTick=0;this.bindUI();
-  document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='F9'){e.preventDefault();this.heroDebugEnabled=!this.heroDebugEnabled;this.heroDebugPanel.classList.toggle('hidden',!this.heroDebugEnabled)}});this.renderGarage();this.buildTrack();this.resize();
+  document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.code==='F9'){e.preventDefault();this.heroDebugEnabled=!this.heroDebugEnabled;this.heroDebugPanel.classList.toggle('hidden',!this.heroDebugEnabled)}});this.renderGarage();this.renderCampaign();this.buildTrack();this.resize();
   addEventListener('resize',()=>this.resize());this.renderer.setAnimationLoop(t=>this.frameLoop(t));
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&this.mode==='race')this.pause()});
   $('loading').classList.add('hidden');window.__asfaltoBooted=true;
@@ -108,7 +110,7 @@ export class Game{
   }
  }
  bindUI(){
-  document.querySelectorAll('.route').forEach(btn=>btn.addEventListener('click',()=>{if(this.mode!=='menu')return;this.route=btn.dataset.route;document.querySelectorAll('.route').forEach(b=>b.classList.toggle('selected',b===btn));this.buildTrack()}));
+  document.querySelectorAll('.route').forEach(btn=>btn.addEventListener('click',()=>{if(this.mode!=='menu')return;this.route=btn.dataset.route;this.gameMode='free';this.renderCampaign();document.querySelectorAll('.route').forEach(b=>b.classList.toggle('selected',b===btn));this.buildTrack()}));
   $('quality').addEventListener('change',e=>{this.quality=e.target.value;this.resize();if(this.mode==='menu')this.buildTrack()});
   $('shadows').addEventListener('change',e=>{this.shadows=e.target.value;if(this.mode==='menu')this.buildTrack()});
   $('lighting').addEventListener('change',e=>{if(e.target.value in LIGHT_MODES){this.lighting=e.target.value;this.world?.update(this.player.z,.2,this.lighting)}});
@@ -121,6 +123,9 @@ export class Game{
   $('mute').addEventListener('click',()=>{const enabled=this.audio.toggle();$('mute').textContent=enabled?'♫':'♪̸';$('sound').checked=enabled});
   $('garage-bikes').addEventListener('click',event=>{const button=event.target.closest('button[data-bike]');if(!button||this.mode!=='menu')return;const {garage,status}=garageAction(this.garage,button.dataset.bike);this.garage=garage;saveGarage(this.storage,this.garage);this.renderGarage();if(status==='selected'||status==='purchased'){this.buildTrack();this.notify(status==='purchased'?'MOTO COMPRADA!':'MOTO EQUIPADA!')}else this.notify(status==='funds'?'CRÉDITOS INSUFICIENTES':'MOTO INDISPONÍVEL')});
   $('weapon-list').addEventListener('click',event=>{const button=event.target.closest('[data-weapon]');if(!button||this.mode!=='menu')return;this.selectWeapon(button.dataset.weapon,true)});
+  $('free-mode').addEventListener('click',()=>{if(this.mode!=='menu')return;this.gameMode='free';this.renderCampaign()});
+  $('campaign-mode').addEventListener('click',()=>{if(this.mode!=='menu')return;this.gameMode='campaign';const available=MISSIONS[Math.min(this.campaign.completed.length,MISSIONS.length-1)];this.selectedMissionId=available.id;this.route=available.route;document.querySelectorAll('.route').forEach(b=>b.classList.toggle('selected',b.dataset.route===this.route));this.buildTrack();this.renderCampaign()});
+  $('campaign-missions').addEventListener('click',event=>{const btn=event.target.closest('button[data-mission]');if(!btn||this.mode!=='menu'||!missionUnlocked(this.campaign,btn.dataset.mission))return;this.gameMode='campaign';this.selectedMissionId=btn.dataset.mission;this.route=missionById(this.selectedMissionId).route;document.querySelectorAll('.route').forEach(b=>b.classList.toggle('selected',b.dataset.route===this.route));this.buildTrack();this.renderCampaign()});
  }
  selectCamera(mode,announce=false){
   if(!(mode in CAMERA_MODES))return false;
@@ -141,6 +146,22 @@ export class Game{
   $('garage-bikes').innerHTML=bikes.join('');
   this.renderWeapons();
  }
+ renderCampaign(){
+  const campaigning=this.gameMode==='campaign';
+  $('free-mode').classList.toggle('selected',!campaigning);
+  $('campaign-mode').classList.toggle('selected',campaigning);
+  $('campaign-panel').classList.toggle('hidden',!campaigning);
+  $('free-track-picker').classList.toggle('hidden',campaigning);
+  $('campaign-count').textContent=this.campaign.completed.length+'/'+MISSIONS.length;
+  $('campaign-missions').innerHTML=MISSIONS.map(m=>{
+   const unlocked=missionUnlocked(this.campaign,m.id),done=this.campaign.completed.includes(m.id);
+   const classes=(this.selectedMissionId===m.id?' selected':'')+(unlocked?'':' locked')+(done?' completed':'');
+   return '<button type="button" data-mission="'+m.id+'" class="'+classes.trim()+'" '+(!unlocked?'disabled':'')+'><strong>'+m.name+'</strong><small>'+(done?'CONCLUÍDA':unlocked?'DISPONÍVEL':'BLOQUEADA')+' · '+m.bonus.toLocaleString('pt-BR')+' CR</small></button>';
+  }).join('');
+  const current=missionById(this.selectedMissionId)||MISSIONS[0];
+  $('mission-brief').textContent=current.objective+' · '+current.route.toUpperCase()+' · BÔNUS '+current.bonus.toLocaleString('pt-BR')+' CR';
+  $('play').innerHTML=campaigning?'INICIAR MISSÃO <span>↗</span>':'INICIAR CORRIDA <span>↗</span>';
+ }
  loadWeapon(){try{const value=this.storage?.getItem?.(WEAPON_STORAGE_KEY)||'chain';return WEAPON_DEFS[value]?value:'chain'}catch{return 'chain'}}
  saveWeapon(){try{this.storage?.setItem?.(WEAPON_STORAGE_KEY,this.selectedWeapon)}catch{}}
  get weapon(){return WEAPON_DEFS[this.selectedWeapon]||WEAPON_DEFS.chain}
@@ -158,16 +179,19 @@ export class Game{
  }
  resize(){const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setPixelRatio(this.renderProfile.pixelRatio);this.renderer.setSize(w,h,false)}
  start(){
+  this.mission=this.gameMode==='campaign'?missionById(this.selectedMissionId):null;
+  if(this.mission)this.route=this.mission.route;
+  this.checkpoints=createCheckpoints();this.simAccum=0;
   this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
   $('menu').classList.add('hidden');$('finish-screen').classList.add('hidden');$('pause-screen').classList.add('hidden');
-  $('hud').classList.remove('is-hidden');$('course-tag').textContent=ROUTES[this.route].name;this.renderWeapons();this.setTouch();this.audio.start();this.audio.siren(false);this.updateHUD();
+  $('hud').classList.remove('is-hidden');$('course-tag').textContent=ROUTES[this.route].name;$('race-objective').textContent=this.mission?'MISSÃO · '+this.mission.objective:'CORRIDA LIVRE · 3 CHECKPOINTS OBRIGATÓRIOS';this.renderWeapons();this.setTouch();this.audio.start();this.audio.siren(false);this.updateHUD();
   $('countdown').classList.remove('hidden');$('countdown').textContent='3';$('fall-banner').classList.add('hidden');$('speed-lines').classList.remove('active');$('police-status').classList.add('is-hidden');
  }
  setTouch(){const coarse=matchMedia('(pointer:coarse)').matches||innerWidth<640;$('touch-controls').classList.toggle('is-hidden',!coarse||!['countdown','race'].includes(this.mode))}
  pause(){if(this.mode!=='race')return;this.mode='pause';this.input.reset();$('pause-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');this.audio.update(0,false,false);this.audio.siren(false)}
  resume(){if(this.mode!=='pause')return;this.mode='race';$('pause-screen').classList.add('hidden');this.setTouch()}
- home(){this.mode='menu';this.renderGarage();$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('police-status').classList.add('is-hidden');$('menu').classList.remove('hidden');$('pause-screen').classList.add('hidden');$('finish-screen').classList.add('hidden');$('hud').classList.add('is-hidden');$('countdown').classList.add('hidden');$('touch-controls').classList.add('is-hidden');this.audio.update(0,false,false);this.audio.siren(false);this.buildTrack()}
+ home(){this.mode='menu';this.simAccum=0;this.renderGarage();this.renderCampaign();$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('police-status').classList.add('is-hidden');$('menu').classList.remove('hidden');$('pause-screen').classList.add('hidden');$('finish-screen').classList.add('hidden');$('hud').classList.add('is-hidden');$('countdown').classList.add('hidden');$('touch-controls').classList.add('is-hidden');this.audio.update(0,false,false);this.audio.siren(false);this.buildTrack()}
  finish(reason='finish'){
   if(this.mode!=='race')return;this.mode='finish';$('speed-lines').classList.remove('active');$('fall-banner').classList.add('hidden');$('finish-screen').classList.remove('hidden');$('touch-controls').classList.add('is-hidden');
   $('finish-kicker').textContent=reason==='crash'?'FIM DE PISTA':this.player.health>0&&this.position()===1?'VOCÊ DOMINOU A ESTRADA':'LINHA DE CHEGADA';
