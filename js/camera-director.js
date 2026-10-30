@@ -1,5 +1,6 @@
 /** Pure camera framing, kept independent from WebGL for deterministic tests. */
 import {clamp,curveAt,headingAt} from './config.js';
+import {roadCenter,roadHeading} from './road-network.js';
 
 export const CAMERA_MODES=Object.freeze({
  chase:Object.freeze({name:'CLÁSSICA',distance:13.8,height:4.65,lookAhead:22,fov:69,lag:6.1,aimLag:8.5,tilt:.016}),
@@ -15,8 +16,9 @@ export function frameCamera({player={},route='coast',mode='chase',nitro=false,me
  const speed=clamp(Number.isFinite(player.speed)?player.speed:0,0,95),v=speed/75;
  const steer=clamp(Number.isFinite(player.steer)?player.steer:0,-1,1);
  const slip=clamp(Number.isFinite(player.lateralVelocity)?player.lateralVelocity:0,-8,8);
- const curveLook=curveAt(z+16+speed*.23,route)-curveAt(z,route);
- const heading=headingAt(z,route);
+ const path=player.pathId||'main';
+ const curveLook=roadCenter(route,z+16+speed*.23,path)-roadCenter(route,z,path);
+ const heading=roadHeading(route,z,path);
  const turnLead=clamp(curveLook*.22,-2.4,2.4);
  const motion=reducedMotion?.34:1;
  const chaseDistance=preset.distance+(menu?0:v*1.35)+(nitro&&!menu?1.7:0);

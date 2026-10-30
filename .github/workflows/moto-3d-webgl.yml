@@ -1,7 +1,7 @@
 name: Asfalto Brutal motorcycle WebGL integration
 on:
   push:
-    branches: [main, feat/jailbreak-pursuit-qa-v207]
+    branches: [main, feat/road-forks-v208]
   workflow_dispatch:
 jobs:
   webgl:
@@ -23,9 +23,12 @@ jobs:
           node --check js/world.js
           node tests/browser-render.test.mjs
           node tests/jailbreak-browser.test.mjs
+          node tests/road-forks-browser.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: motorcycle-webgl-screenshot
-          path: tests/browser-render.png
+          path: |
+            tests/browser-render.png
+            tests/road-fork-render.png
           if-no-files-found: ignore

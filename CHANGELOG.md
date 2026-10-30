@@ -1,3 +1,13 @@
+## 2.0.8 — 30/10/2026 — Bifurcações no mapa e pilotagem em rotas alternativas
+
+- Seis ramais físicos reais, dois em cada um dos três cenários originais.
+- Novo sistema de rotas e histerese em js/road-network.js.
+- Física, yaw do piloto, câmera e recuperação após queda compatíveis com a via alternativa.
+- Asfalto, faixas, guardrails e placas 3D dos caminhos laterais; distância de segurança para construções e árvores.
+- Checkpoints não podem ser evitados pelos desvios; classificação respeita o próximo posto válido.
+- Indicador de bifurcação no HUD e testes de navegação em Node/Chromium.
+- Mantidos os sistemas anteriores de campanha, combate, polícia e garagem.
+
 ## 2.0.7 — 30/10/2026 — Cerco policial e correção de checkpoints
 
 - A missão 4 exige uma fuga real registrada no contador (e integridade >=35%).

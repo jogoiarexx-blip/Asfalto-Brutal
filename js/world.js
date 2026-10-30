@@ -1,11 +1,21 @@
 import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,curveAt,headingAt} from './config.js';
 import {CHECKPOINT_DISTANCES} from './checkpoints.js';
+import {forksFor,roadCenter,roadHeading,isForkMouth,roadsideClearance} from './road-network.js';
 import {buildRoadsideArchitecture} from './roadside-architecture.js';
 import {lightingFrame,lightBlend} from './lighting-director.js';
 const UP=new THREE.Vector3(0,1,0);const MATRIX=new THREE.Matrix4();const Q=new THREE.Quaternion();const V=new THREE.Vector3();const S=new THREE.Vector3();
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}}
 function ribbon(route,from,to,height,step,material){const verts=[],indices=[],uvs=[];for(let z=-120;z<=RACE_LENGTH+320;z+=8){const x=curveAt(z,route);verts.push(x+from,height,z,x+to,height,z);uvs.push(0,z/16,1,z/16);if(verts.length>6){const i=verts.length/3-4;indices.push(i,i+2,i+1,i+1,i+2,i+3)}}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();return new THREE.Mesh(geo,material)}
+function forkRibbon(route,fork,from,to,height,material){
+ const vertices=[],indices=[],uv=[];const steps=Math.ceil((fork.end-fork.start)/7);
+ for(let j=0;j<=steps;j++){
+  const z=fork.start+(fork.end-fork.start)*j/steps,x=roadCenter(route,z,fork.id);
+  vertices.push(x+from,height,z,x+to,height,z);uv.push(0,z/16,1,z/16);
+  if(j){const i=j*2-2;indices.push(i,i+2,i+1,i+1,i+2,i+3)}
+ }
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return new THREE.Mesh(g,material);
+}
 function placeInstance(mesh,index,x,y,z,sx=1,sy=1,sz=1,rot=0){V.set(x,y,z);Q.setFromAxisAngle(UP,rot);S.set(sx,sy,sz);MATRIX.compose(V,Q,S);mesh.setMatrixAt(index,MATRIX)}
 function meshInstanced(geo,mat,count,scene){const m=new THREE.InstancedMesh(geo,mat,count);m.instanceMatrix.setUsage(THREE.StaticDrawUsage);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;scene.add(m);return m}
 function mat(color,extra={}){return new THREE.MeshLambertMaterial({color,...extra})}
@@ -37,6 +47,7 @@ export class RoadWorld{
   if(route==='coast'){const sea=this.add(new THREE.Mesh(new THREE.PlaneGeometry(390,RACE_LENGTH+1500),new THREE.MeshLambertMaterial({color:0x4485a1,emissive:0x183b56,emissiveIntensity:.3})));sea.rotation.x=-Math.PI/2;sea.position.set(-350,-.18,RACE_LENGTH/2)}
   const roadMat=new THREE.MeshStandardMaterial({color:config.road,map:asphaltTexture(this.quality==='low'),roughness:.96});const ribbons=[[-ROAD_HALF-.86,ROAD_HALF+.86,.005,mat(config.shoulder)],[-ROAD_HALF,ROAD_HALF,.026,roadMat],[-ROAD_HALF,-ROAD_HALF+.13,.032,new THREE.MeshBasicMaterial({color:0xefeee8})],[ROAD_HALF-.13,ROAD_HALF,.032,new THREE.MeshBasicMaterial({color:0xefeee8})]];
   for(const [a,b,h,m] of ribbons){const roadPiece=ribbon(route,a,b,h,8,m);roadPiece.receiveShadow=this.profile.shadows;this.add(roadPiece)}
+  this.createForkRoads(route,config,roadMat);
   // Painted rumble strips, patched asphalt and periodic cat's-eye reflectors.
   const rumbleCount=Math.floor((RACE_LENGTH+160)/6)*2;
   const rumble=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.64,.025,2.55),new THREE.MeshBasicMaterial({color:config.edge}),rumbleCount));
@@ -56,7 +67,7 @@ export class RoadWorld{
   const crownGeo=route==='coast'?new THREE.DodecahedronGeometry(1,0):route==='desert'?new THREE.CylinderGeometry(.35,.48,1,6):new THREE.ConeGeometry(1,1,6);
   const tops=this.add(new THREE.InstancedMesh(crownGeo,mat(config.trees),treeCount));
   const arms=route==='desert'?this.add(new THREE.InstancedMesh(new THREE.CylinderGeometry(.17,.22,.9,5),mat(0x758049),treeCount*2)):null;tops.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-  for(let i=0;i<treeCount;i++){const side=i%2?-1:1,z=Math.floor(i/2)*spacing-45+random()*13;const x=curveAt(z,route)+side*(18+random()*34);const h=route==='desert'?2.4+random()*2.4:3+random()*5;
+  for(let i=0;i<treeCount;i++){const side=i%2?-1:1,z=Math.floor(i/2)*spacing-45+random()*13;const x=curveAt(z,route)+side*roadsideClearance(route,z,side,18+random()*34);const h=route==='desert'?2.4+random()*2.4:3+random()*5;
    placeInstance(trunk,i,x,h*.30,z,route==='desert'?1.2:.8,h*.65,route==='desert'?1.2:.8,random()*6);
    if(route==='desert'){
     placeInstance(tops,i,x,h*.81,z,1.25,h*.64,1.25);
@@ -68,8 +79,8 @@ export class RoadWorld{
   // Rocky silhouettes add depth behind the shoulder without imported assets.
   const mountainCount=this.quality==='low'?40:105;const hills=this.add(new THREE.InstancedMesh(new THREE.ConeGeometry(1,1,4),mat(config.mountain),mountainCount));hills.instanceMatrix.setUsage(THREE.StaticDrawUsage);
   for(let i=0;i<mountainCount;i++){const z=i/(mountainCount-1)*(RACE_LENGTH+360)-80,side=i%2?-1:1;const x=curveAt(z,route)+side*(90+random()*110);const height=route==='highlands'?40+random()*95:20+random()*65;placeInstance(hills,i,x,height*.3-1,z,25+random()*39,height,24+random()*39,random()*Math.PI)}hills.instanceMatrix.needsUpdate=true;
-  const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,1,1,1,headingAt(z,route));rail.instanceMatrix.needsUpdate=true;
-  const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1])placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z);posts.instanceMatrix.needsUpdate=true;
+  const barCount=Math.floor((RACE_LENGTH+200)/17)*2;const rail=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.17,.3,15),mat(route==='desert'?0xd5b3a0:0x9babaf),barCount));rail.instanceMatrix.setUsage(THREE.StaticDrawUsage);let idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(rail,idx++,curveAt(z,route)+side*8.4,.57,z,hide?0.001:1,hide?0.001:1,hide?0.001:1,headingAt(z,route))}rail.instanceMatrix.needsUpdate=true;
+  const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.15,.14),mat(0x687d86),barCount));posts.instanceMatrix.setUsage(THREE.StaticDrawUsage);idx=0;for(let z=-45;z<RACE_LENGTH+120;z+=17)for(let side of [-1,1]){const hide=isForkMouth(route,z,side);placeInstance(posts,idx++,curveAt(z,route)+side*8.4,.30,z,hide?0.001:1,hide?0.001:1,hide?0.001:1)}posts.instanceMatrix.needsUpdate=true;
   for(let z=260;z<RACE_LENGTH;z+=490){this.createSign(z,config,route)}
   this.createFinish(route);this.createCheckpointGates(route);this.createRoadsideDetail(random);this.architecture=buildRoadsideArchitecture(this);
   const sunBall=this.add(new THREE.Mesh(new THREE.SphereGeometry(20,16,8),new THREE.MeshBasicMaterial({color:route==='desert'?0xffd69b:0xffeac5,fog:false})));sunBall.position.set(-150,110,230);this.sunBall=sunBall;
@@ -82,7 +93,7 @@ export class RoadWorld{
   const accents=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.85,.34,.24),new THREE.MeshBasicMaterial({color:route==='desert'?0xffbc72:route==='highlands'?0x8fdfff:0xffdd9c}),count));
   for(let i=0;i<count;i++){
    const z=-30+i*(RACE_LENGTH+120)/count,side=i%2?1:-1;
-   const x=curveAt(z,route)+side*(10.9+random()*1.6);
+   const x=curveAt(z,route)+side*roadsideClearance(route,z,side,10.9+random()*1.6);
    placeInstance(posts,i,x,1.85,z,1,1,1,headingAt(z,route));
    placeInstance(studs,i,x,3.65,z,.95,1,1,headingAt(z,route));
    placeInstance(accents,i,x,3.67,z+side*.15,.85,1,1,headingAt(z,route));
@@ -112,6 +123,68 @@ export class RoadWorld{
   }
  }
 
+
+ /** Both branches reconnect to the mandatory main road before each checkpoint. */
+ createForkRoads(route,config,roadMaterial){
+  for(const fork of forksFor(route)){
+   const shoulders=new THREE.MeshLambertMaterial({color:config.shoulder,side:THREE.DoubleSide});
+   const edgeMat=new THREE.MeshBasicMaterial({color:0xf0efe7,side:THREE.DoubleSide});
+   const details=[
+    [-ROAD_HALF-.90,ROAD_HALF+.90,.012,shoulders],
+    [-ROAD_HALF,ROAD_HALF,.041,roadMaterial],
+    [-ROAD_HALF,-ROAD_HALF+.12,.056,edgeMat],
+    [ROAD_HALF-.12,ROAD_HALF,.056,edgeMat]
+   ];
+   for(const [left,right,height,material] of details){
+    const road=forkRibbon(route,fork,left,right,height,material);
+    road.name='FORK_'+fork.id+'_ROAD';
+    road.receiveShadow=this.profile.shadows;this.add(road);
+   }
+   const n=Math.floor((fork.end-fork.start)/15);
+   const markers=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.13,.012,4.1),new THREE.MeshBasicMaterial({color:config.edge}),n));
+   markers.name='FORK_'+fork.id+'_CENTERLINE';
+   for(let i=0;i<n;i++){
+    const z=fork.start+8+i*15;
+    placeInstance(markers,i,roadCenter(route,z,fork.id),.069,z,1,1,1,roadHeading(route,z,fork.id));
+   }
+   markers.instanceMatrix.needsUpdate=true;
+   // Raízes visuais dos limites laterais somente depois que os caminhos se separam.
+   const sideCount=Math.floor((fork.end-fork.start)/19)*2;
+   const rails=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.16,.30,16),new THREE.MeshLambertMaterial({color:0x99a8ac}),sideCount));
+   const posts=this.add(new THREE.InstancedMesh(new THREE.BoxGeometry(.14,1.08,.14),new THREE.MeshLambertMaterial({color:0x687d86}),sideCount));
+   rails.name='FORK_'+fork.id+'_RAILS';
+   let nRail=0;
+   for(let z=fork.start+9;nRail<sideCount;z+=19){
+    for(const side of [-1,1]){
+     const cleared=Math.abs(roadCenter(route,z,fork.id)-curveAt(z,route))>ROAD_HALF*2+4;
+     const visible=cleared?1:.001;
+     const x=roadCenter(route,z,fork.id)+side*8.4,heading=roadHeading(route,z,fork.id);
+     placeInstance(rails,nRail,x,.55,z,visible,visible,visible,heading);
+     placeInstance(posts,nRail,x,.30,z,visible,visible,visible);
+     nRail++;
+     if(nRail>=sideCount)break;
+    }
+   }
+   rails.instanceMatrix.needsUpdate=true;posts.instanceMatrix.needsUpdate=true;
+   const sign=new THREE.Group();
+   const base=new THREE.Mesh(new THREE.BoxGeometry(.17,3.7,.20),new THREE.MeshLambertMaterial({color:0x596872}));
+   base.position.y=1.85;sign.add(base);
+   const frame=new THREE.Mesh(new THREE.BoxGeometry(4.8,1.5,.15),new THREE.MeshLambertMaterial({color:0x162c33}));
+   frame.position.y=4.1;sign.add(frame);
+   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=160;
+   const ctx=canvas.getContext('2d');ctx.fillStyle='#172b32';ctx.fillRect(0,0,512,160);
+   ctx.fillStyle='#eaff77';ctx.font='bold 46px Impact, sans-serif';ctx.textAlign='center';ctx.fillText('DESVIO',256,56);
+   ctx.fillStyle='#ffffff';ctx.font='bold 32px Impact, sans-serif';ctx.fillText(fork.name,256,108);
+   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+   const face=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.36),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+   face.position.set(0,4.1,.087);sign.add(face);
+   const z=fork.start+105;
+   const x=roadCenter(route,z,fork.id)+fork.side*(ROAD_HALF+2.8);
+   sign.position.set(x,0,z);sign.rotation.y=roadHeading(route,z,fork.id);
+   sign.name='FORK_'+fork.id+'_SIGN';
+   this.add(sign);
+  }
+ }
  createCheckpointGates(route){
   const config=ROUTES[route];
   for(const [index,z] of CHECKPOINT_DISTANCES.entries()){

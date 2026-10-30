@@ -1,4 +1,5 @@
 import {clamp,curveAt,ROAD_HALF} from './config.js';
+import {nearestRoad,roadCenter} from './road-network.js';
 import {worldSteer} from './collision.js';
 import {evolveTraction} from './traction.js';
 export const ROAD_RAIL=7.72;
@@ -8,7 +9,9 @@ export const ROAD_RAIL=7.72;
 export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,route,tuning={}){
  dt=clamp(dt,0,.045);
  const old={x:p.x,z:p.z,yaw:p.yaw||0,speed:p.speed,lateralVelocity:p.lateralVelocity||0};
- const offset=p.x-curveAt(p.z,route);
+ const oldRoad=nearestRoad(p.x,p.z,route,p.pathId||'main');
+ p.pathId=oldRoad.pathId;
+ const offset=oldRoad.offset;
  const onRoad=Math.abs(offset)<ROAD_HALF-.25;
  const speedRatio=clamp(p.speed/70,0,1);
  const acceleration=tuning.accel||1,maxSpeed=tuning.topSpeed||1,handling=tuning.handling||1;
@@ -34,12 +37,14 @@ export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,rout
  p.slideVelocity=(p.slideVelocity||0)*Math.exp(-dt*(5.3-traction.slide*3.5))+(oldVel-targetVelocity)*traction.slide*dt*1.1;
  p.slideVelocity=clamp(p.slideVelocity,-3.4,3.4);
  p.z+=p.speed*dt;
- p.x+=curveAt(p.z,route)-curveAt(old.z,route)+(p.lateralVelocity+p.slideVelocity)*dt;
+ p.x+=roadCenter(route,p.z,p.pathId)-roadCenter(route,old.z,p.pathId)+(p.lateralVelocity+p.slideVelocity)*dt;
  let railImpact=false,offRoad=false;
- const nextOffset=p.x-curveAt(p.z,route);
+ const chosenRoad=nearestRoad(p.x,p.z,route,p.pathId);
+ p.pathId=chosenRoad.pathId;
+ const nextOffset=chosenRoad.offset;
  if(Math.abs(nextOffset)>ROAD_HALF-.25){offRoad=true;p.speed=Math.max(0,p.speed-dt*(14+speedRatio*8))}
  if(Math.abs(nextOffset)>ROAD_RAIL){
-  p.x=curveAt(p.z,route)+Math.sign(nextOffset)*ROAD_RAIL;
+  p.x=chosenRoad.center+Math.sign(nextOffset)*ROAD_RAIL;
   p.lateralVelocity=-p.lateralVelocity*.22;p.slideVelocity=0;
   p.speed*=.87;
   p.contactJolt=Math.max(p.contactJolt||0,.65);
@@ -52,5 +57,5 @@ export function moveBike(p,{steer=0,accel=false,brake=false,boost=false},dt,rout
  p.contactJolt=(p.contactJolt||0)*Math.exp(-dt*5.5);
  if(offRoad)p.suspension=Math.min(.15,p.suspension+.020);
  p.slip=clamp(traction.slide*.72+Math.abs(targetVelocity-oldVel)/Math.max(3,p.speed)*.16,0,1);
- return {old,boosted,railImpact,offRoad,grip,bank:p.bank,slip:p.slip,tractionLoss:p.tractionLoss};
+ return {old,boosted,railImpact,offRoad,grip,bank:p.bank,slip:p.slip,tractionLoss:p.tractionLoss,pathId:p.pathId};
 }

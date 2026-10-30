@@ -122,3 +122,9 @@
 .arrest-meter i{display:block;height:100%;width:0;background:#ff4a41;transition:width .08s linear}
 @media(max-width:800px){.stage-status,.mission-live{font-size:10px;max-width:220px;padding:3px 6px}.arrest-status{font-size:10px}}
 @media(max-width:550px){.stage-status,.mission-live{max-width:150px;font-size:9px;letter-spacing:0}.race-objective{display:none}.race-stats{margin-top:3px}}
+
+
+/* v2.0.8 — indicação discreta de bifurcação sem ocultar a direção no mobile. */
+.road-branch{max-width:350px;width:max-content;line-height:1.3;padding:5px 8px;margin-top:4px;background:#102722e6;border-left:3px solid #c8e957;color:#e4ffaf;font:800 12px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.6px}
+@media(max-width:800px){.road-branch{font-size:10px;max-width:220px;padding:3px 6px}}
+@media(max-width:550px){.road-branch{font-size:9px;max-width:150px;letter-spacing:0}}

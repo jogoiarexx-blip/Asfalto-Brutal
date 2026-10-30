@@ -26,6 +26,7 @@ import {preparePlayerVehicle,ensurePlayerVehicle,playerOutsideView} from './play
 import {createHeroDebugPanel,updateHeroDebugPanel} from './debug-hero.js';
 import {MISSIONS,missionById,missionUnlocked,loadCampaign,saveCampaign,completeMission} from './jailbreak-campaign.js';
 import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed,nextCheckpoint,missedCheckpoint} from './checkpoints.js';
+import {roadCenter,roadHeading,activeFork,forkOffset} from './road-network.js';
 const $=id=>document.getElementById(id);
 const rivalsColors=[0xffcf54,0xa66cff,0x51ccff,0xf96d90,0x71df9b,0xff8543];
 const carColors=[0xde5549,0xf2d36b,0x57bcd5,0x5466a8,0xe9e6dc,0x418579];
@@ -41,7 +42,7 @@ export class Game{
   this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,powerPreference:'high-performance',alpha:false});
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.21;
   this.renderer.shadowMap.enabled=false;this.renderer.shadowMap.type=THREE.PCFShadowMap;
-  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.campaign=loadCampaign(this.storage);this.gameMode='free';this.selectedMissionId=MISSIONS[0].id;this.mission=null;this.checkpoints=createCheckpoints();this.simAccum=0;this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.cameraMode=this.readSetting('asfalto-camera-v2','chase',CAMERA_MODES);this.lighting='auto';this.mode='menu';this.cameraDirector=new CameraDirector(this.camera);
+  this.input=new Input();this.audio=new AudioSystem();this.storage=null;try{this.storage=window.localStorage}catch{}this.garage=loadGarage(this.storage);this.campaign=loadCampaign(this.storage);this.gameMode='free';this.selectedMissionId=MISSIONS[0].id;this.mission=null;this.checkpoints=createCheckpoints();this.branchChoices={};this.simAccum=0;this.selectedWeapon=this.loadWeapon();this.policePatrolCount=0;this.earnedLast=0;this.route='coast';this.quality='auto';this.shadows='auto';this.cameraMode=this.readSetting('asfalto-camera-v2','chase',CAMERA_MODES);this.lighting='auto';this.mode='menu';this.cameraDirector=new CameraDirector(this.camera);
   this.skidMarks=null;this.rivalCollisions=0;this.npcContacts=0;this.frame=0;this.elapsed=0;this.player={z:0,x:0,speed:0,health:100,nitro:100};this.rivals=[];this.traffic=[];this.pickups=[];this.effects=[];this.police=null;this.policeNext=0;this.policeLost=0;this.arrestProgress=0;this.arrestGrace=0;this.heat=0;this.playerFall=null;this.dustClock=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.attackPhase=0;this.attackSide=0;this.activeStrike=null;this.playerAttackAge=Infinity;this.reactionTimer=0;this.lastPadStatus=false;this.attackSerial=0;this.impactSlow=0;
   this.toastTimer=0;this.flashTimer=0;this.cameraShake=0;this.debugBoxes=false;this.lastFrame=performance.now();this.hits=0;this.falls=0;this.escapes=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.autoScale=1;this.automaticShadowDrop=false;
@@ -63,7 +64,7 @@ export class Game{
   // foreground pass so scenery's depth buffer cannot hide them.
   this.playerBike.group.name='PLAYER_BIKE_3D';this.scene.add(this.playerBike.group);
   this.playerBike.shadow.removeFromParent();this.heroShadowAnchor.add(this.playerBike.shadow);this.scene.add(this.heroShadowAnchor);
-  this.player={x:curveAt(0,this.route),z:0,yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
+  this.player={x:curveAt(0,this.route),z:0,pathId:'main',yaw:headingAt(0,this.route),speed:0,health:100,nitro:100,steer:0,lateralVelocity:0,slideVelocity:0,tractionLoss:0,bank:0,suspension:0,contactJolt:0,slip:0};
   this.playerBike.group.position.set(this.player.x,0,0);this.heroOutOfViewTime=0;this.addHull(this.playerBike,HULLS.bike,0x8fff8b);
   this.syncHeroShadow();
   this.cameraDirector.reset(frameCamera({player:this.player,route:this.route,mode:this.cameraMode,menu:true,reducedMotion:this.reducedMotion}));this.world.update(0,.016,this.lighting);
@@ -181,7 +182,7 @@ export class Game{
  start(){
   this.mission=this.gameMode==='campaign'?missionById(this.selectedMissionId):null;
   if(this.mission)this.route=this.mission.route;
-  this.checkpoints=createCheckpoints();this.simAccum=0;
+  this.checkpoints=createCheckpoints();this.branchChoices={};this.simAccum=0;
   this.buildTrack();this.populate();this.mode='countdown';this.countTimer=3.3;this.elapsed=0;this.hits=0;this.falls=0;this.escapes=0;
   this.hitCooldown=0;this.hurtCooldown=0;this.activeStrike=null;this.attackPhase=0;this.playerAttackAge=Infinity;this.reactionTimer=0;this.hudTick=0;this.fpsTime=0;this.fpsFrames=0;this.heat=0;this.policeNext=0;this.policeLost=0;this.arrestProgress=0;this.arrestGrace=0;this.policePatrolCount=0;this.earnedLast=0;this.playerFall=null;this.dustClock=0;this.attackSerial=0;this.impactSlow=0;this.rivalCollisions=0;this.input.reset();
   $('menu').classList.add('hidden');$('finish-screen').classList.add('hidden');$('pause-screen').classList.add('hidden');
@@ -216,7 +217,7 @@ export class Game{
   $('final-place').textContent=this.position()+'º';$('final-time').textContent=formatTime(this.elapsed);$('final-hits').textContent=String(this.hits);$('final-falls').textContent=String(this.falls);$('final-escapes').textContent=String(this.escapes);
   this.audio.tone(reason==='crash'||reason==='arrest'?120:780,.5,'sawtooth',.1);this.audio.update(0,false,false);this.audio.siren(false);
  }
- position(){return rankOf(this.player.z,this.rivals)}
+ position(){const z=Math.min(this.player.z,nextCheckpoint(this.checkpoints)??RACE_LENGTH);return rankOf(z,this.rivals)}
  notify(message){$('toast').textContent=message;$('toast').classList.add('visible');this.toastTimer=1.45}
  hit(damage=15,impact=false,relativeSpeed=0,side=1){
   if(this.hurtCooldown>0||this.playerFall)return false;
@@ -238,10 +239,11 @@ export class Game{
   const p=this.player;
   // Choose the least occupied lane, then back up if every lane is crowded.
   const others=[...this.rivals,...this.traffic,...(this.police?[this.police]:[])].filter(e=>!(e.fallen>0));
-  const lanes=[-4.4,0,4.4].sort((a,b)=>Math.abs((p.x-curveAt(p.z,this.route))-a)-Math.abs((p.x-curveAt(p.z,this.route))-b));
-  const lane=lanes.find(offset=>others.every(e=>Math.abs(e.z-p.z)>8||Math.abs(e.x-curveAt(p.z,this.route)-offset)>2.6));
+  const center=roadCenter(this.route,p.z,p.pathId||'main');
+  const lanes=[-4.4,0,4.4].sort((a,b)=>Math.abs((p.x-center)-a)-Math.abs((p.x-center)-b));
+  const lane=lanes.find(offset=>others.every(e=>Math.abs(e.z-p.z)>8||Math.abs(e.x-center-offset)>2.6));
   if(lane===undefined)p.z=Math.max(0,p.z-12);
-  p.x=curveAt(p.z,this.route)+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.slideVelocity=0;p.tractionLoss=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
+  p.x=center+(lane??lanes[0]);p.speed=17;p.lateralVelocity=0;p.slideVelocity=0;p.tractionLoss=0;p.steer=0;p.bank=0;p.contactJolt=0;p.suspension=0;
   this.playerFall=null;this.arrestGrace=RECOVERY_GRACE;setCrashRider(this.playerBike,false);ensurePlayerVehicle(this.playerBike,false);this.playerBike.lean.rotation.set(0,0,0);this.playerBike.rider.rotation.set(0,0,0);this.heroOutOfViewTime=0;$('fall-banner').classList.add('hidden');this.notify('DE VOLTA À CORRIDA!');
  }
 
@@ -311,7 +313,9 @@ export class Game{
   this.hitCooldown=Math.max(0,this.hitCooldown-dt);this.hurtCooldown=Math.max(0,this.hurtCooldown-dt);this.reactionTimer=Math.max(0,this.reactionTimer-dt);this.playerAttackAge+=dt;this.attackPhase=Math.max(0,this.attackPhase-dt*2.5);
   const steer=this.input.steer,accel=this.input.accelerating,brake=this.input.braking;
   const movement=moveBike(p,{steer,accel,brake,boost:this.input.boosting},dt,this.route,chosenBike(this.garage));
-  p.yaw=headingAt(p.z,this.route)-p.steer*.105;
+  p.yaw=roadHeading(this.route,p.z,p.pathId)-p.steer*.105;
+  const branch=activeFork(this.route,p.z);
+  if(branch&&p.pathId===branch.id&&Math.abs(forkOffset(branch,p.z))>12&&!this.branchChoices[branch.id]){this.branchChoices[branch.id]=true;this.notify('ROTA ALTERNATIVA: '+branch.name)}
   const oldGateCount=this.checkpoints.passed;
   this.checkpoints=advanceCheckpoints(this.checkpoints,movement.old.z,p.z,p.x-curveAt(p.z,this.route),ROAD_HALF);
   if(this.checkpoints.passed>oldGateCount)this.notify('CHECKPOINT '+this.checkpoints.passed+'/'+this.checkpoints.gates.length+' VALIDADO');
@@ -556,7 +560,7 @@ export class Game{
   }
   b.group.position.set(p.x,Math.sin(this.elapsed*22)*Math.min(.022,p.speed*.00032)+(p.suspension||0)*.50,p.z);
   b.group.rotation.y=lerpAngle(b.group.rotation.y,p.yaw,Math.min(1,dt*8));
-  b.lean.rotation.z=lerp(b.lean.rotation.z,(p.bank||0)-headingAt(p.z,this.route)*.20+(p.contactJolt||0)*Math.sin(this.elapsed*29)*.085,Math.min(1,dt*8));
+  b.lean.rotation.z=lerp(b.lean.rotation.z,(p.bank||0)-roadHeading(this.route,p.z,p.pathId||'main')*.20+(p.contactJolt||0)*Math.sin(this.elapsed*29)*.085,Math.min(1,dt*8));
   // Root cause: undefined from unconnected gamepad poisoned lean.rotation.x with NaN.
   // Three.js then generated an invalid world matrix for every rider/bike mesh.
   const braking=!!this.input.braking,accelerating=!!this.input.accelerating;
@@ -616,6 +620,9 @@ export class Game{
   $('checkpoint-status').textContent='POSTOS '+count;
   const pending=nextCheckpoint(this.checkpoints);
   $('stage-status').textContent='POSTOS '+count+(pending!==null?' · PRÓXIMO '+Math.max(0,Math.ceil(pending-p.z))+' M':' · RUMO À CHEGADA');
+  const branch=activeFork(this.route,p.z);
+  $('road-branch').classList.toggle('hidden',!branch);
+  if(branch)$('road-branch').textContent=p.pathId===branch.id?'ROTA ALTERNATIVA · '+branch.name:'BIFURCAÇÃO · '+(branch.side<0?'DIREITA':'ESQUERDA')+' · '+branch.name;
   if(this.mission){
    const m=this.mission,parts=[];
    if(m.maxPlace)parts.push('META '+m.maxPlace+'º');
