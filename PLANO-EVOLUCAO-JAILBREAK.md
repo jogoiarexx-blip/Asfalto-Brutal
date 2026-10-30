@@ -1,5 +1,5 @@
 # ASFALTO BRUTAL — Execução do GDD Road Rash 3D + Jailbreak
-Versão 2.0.7 · 30/10/2026
+Versão 2.0.8 · 30/10/2026
 
 ## Situação do projeto
 O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros, IA de tráfego, cinco armas, polícia, garagem, controles e quedas. A evolução preserva essa base em Three.js com HTML e módulos, sem impor migração para Vite.
@@ -20,6 +20,15 @@ O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros
 - [x] Status em tempo real dos objetivos e checkpoints acessível no mobile.
 - [x] Testes de regressão determinísticos e integração Chromium com cenário controlado (não substitui partida completa).
 
+## Aplicado na 2.0.8 — Rede viária incremental
+- [x] Duas estradas opcionais por região, com conexão física à pista principal.
+- [x] Troca de superfície pilotável por distância e histerese (não teleporte).
+- [x] Modelo da pista validado independentemente dos gráficos, mantendo checkpoints nas junções finais.
+- [x] Geometria e sinalização low-poly, segurança contra objetos nas pistas secundárias.
+- [x] Câmera e recuperação após queda no ramal; HUD de rota escolhida.
+- [x] Testes de navegação em física e navegador com estado controlado.
+- [ ] Grafo viário urbano geral, IA circulando nos ramais, objetivos por escolha de caminho e certificação de corridas completas.
+
 ## Capítulo I — seis missões
 | Missão | Local | Condição principal |
 |---|---|---|
@@ -32,7 +41,7 @@ O jogo preexistente v2.0.5 já possuía três estradas, seis rivais, onze carros
 
 ## Prioridades seguintes
 1. Jogar e balancear todas as seis missões do início ao fim, sem teleporte ou cenários controlados nos testes; certificar que é possível concluir todas.
-2. Grafo de estradas com bifurcações e checkpoints por segmento; classificação por distância válida no percurso.
+2. Expandir os ramais para uma malha de estradas interligadas e permitir trânsito/rivais nesses caminhos; adicionar checkpoints por segmento e classificação por distância válida efetivamente percorrida.
 3. Eventos narrativos e missões realmente específicas (resgate, entrega, escolta, fuga, líder rival).
 4. Modo Patrulha policial, depois Sidecar cooperativo com controle independente.
 5. Setorização, LOD e pré-carregamento de objetos sem apagar oponentes ativos.
