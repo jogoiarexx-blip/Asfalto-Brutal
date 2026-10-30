@@ -14,7 +14,7 @@ export function architectureLayout(route,quality='high') {
   }
  }
  // Arches do not block the road: pillars at +/- 10.8m; crossbeam above 7m.
- const portals=route==='highlands'?[{start:1180,count:low?2:5,step:27},{start:2850,count:low?2:5,step:27}]
-   :low?[]:[{start:route==='desert'?920:890,count:1,step:35},{start:route==='desert'?2420:2540,count:1,step:35}];
+ const portals=route==='highlands'?[{start:980,count:low?2:4,step:26},{start:2970,count:low?2:4,step:27}]
+   :low?[]:[{start:route==='desert'?920:890,count:1,step:35},{start:route==='desert'?2990:3030,count:1,step:35}];
  return {landmarks,portals,density};
 }
