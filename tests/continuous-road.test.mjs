@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import {RACE_LENGTH,ROAD_HALF,curveAt,clamp} from '../js/config.js';
 import {moveBike} from '../js/physics.js';
-import {forksFor,roadCenter} from '../js/road-network.js';
+import {forksFor,roadCenter,forkOffset} from '../js/road-network.js';
 import {createCheckpoints,advanceCheckpoints,allCheckpointsPassed} from '../js/checkpoints.js';
 import {missionById} from '../js/jailbreak-campaign.js';
 import {initialMissionRun,advanceMissionRun} from '../js/mission-events.js';
@@ -21,7 +21,8 @@ for(const route of ['coast','desert','highlands']){
    const oldZ=player.z;
    const targetZ=Math.min(RACE_LENGTH,player.z+65);
    const desiredPath=player.z>=targetFork.start-70&&player.z<targetFork.end-35?targetFork.id:'main';
-   const targetX=roadCenter(route,targetZ,desiredPath);
+   // Follow the current road curvature automatically; anticipate ONLY the branch offset.
+   const targetX=curveAt(player.z,route)+(desiredPath==='main'?0:forkOffset(targetFork,targetZ));
    const steer=clamp((player.x-targetX)*.24,-1,1);
    const move=moveBike(player,{steer,accel:true},step,route);
    assert.ok(player.z>=oldZ&&player.z-oldZ<=2,'progresso contínuo, sem teleporte');
