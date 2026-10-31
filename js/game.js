@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {RACE_LENGTH,ROAD_HALF,ROUTES,clamp,lerp,approach,curveAt,headingAt,formatTime,rankOf,kmh,nextRacerSpeed} from './config.js';
 import {HULLS,sweptVehicleHit,strikeCandidate,atTime} from './collision.js';
-import {moveBike} from './physics.js';
+import {moveBike,ROAD_RAIL} from './physics.js';
 import {contactResponse} from './contact-response.js';
 import {chooseRivalDefense,guardDamage,dodgeOffset} from './defense.js';
 import {RoadWorld} from './world.js';
@@ -473,11 +473,13 @@ export class Game{
   const atPlayer=atTime(playerOld,p,time),atOther=atTime(e.old,e,time);
   const contact=contactResponse(p,e,HULLS.bike,hull,{contactDx:atPlayer.x-atOther.x,contactDz:atPlayer.z-atOther.z});
   p.z=contact.z;
-  p.x=clamp(contact.x,curveAt(p.z,this.route)-7.72,curveAt(p.z,this.route)+7.72);
+  // Collision displacement stays relative to the road being driven, including side routes.
+  const roadX=roadCenter(this.route,p.z,p.pathId);
+  p.x=clamp(contact.x,roadX-ROAD_RAIL,roadX+ROAD_RAIL);
   p.speed=contact.speed;p.lateralVelocity=contact.lateralVelocity;p.slideVelocity=(p.slideVelocity||0)*.4;
   p.contactJolt=Math.max(p.contactJolt||0,Math.min(1.4,contact.intensity*1.3));
   p.suspension=Math.max(p.suspension||0,Math.min(.20,contact.intensity*.19));
-  p.yaw=headingAt(p.z,this.route)-p.steer*.105;
+  p.yaw=roadHeading(this.route,p.z,p.pathId)-p.steer*.105;
   if(contact.intensity>.30){
    if(this.skidMarks)this.skidMarks.add(p.x,p.z,p.yaw,contact.intensity,true);
    this.cameraShake=Math.max(this.cameraShake,.12+contact.intensity*.18);

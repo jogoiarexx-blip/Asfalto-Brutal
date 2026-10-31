@@ -77,7 +77,7 @@ try{
   const finalCount=document.getElementById('campaign-count').textContent;
   const ninthForks=forksFor('coast').length;
   const gl=g.renderer.getContext().getError();
-  return {menuCount,chapter2Unlocked,markerCount,illegalPickup,pickup,visited,pickupHidden,deliveryShown,delivered,status,courierSuccess,courierBonus,eighthUnlocked,policeStarted,canyonVisited,pursuitSuccess,forksVisited,finalSuccess,finalCount,ninthForks,gl};
+  return {menuCount,chapter2Unlocked,markerCount,illegalPickup,pickup,visited,pickupHidden,deliveryShown,delivered,status,courierSuccess,courierBonus,eighthUnlocked,policeStarted,canyonVisited,pursuitSuccess,forksVisited,finalSuccess,finalCount,ninthForks,gl,wallet:g.garage.money};
  });
  console.log('CHAPTER II CHROMIUM:',JSON.stringify(result));
  assert.equal(result.menuCount,'6/9');
@@ -102,6 +102,19 @@ try{
  assert.equal(result.ninthForks,3);
  assert.equal(result.gl,0);
  assert.deepEqual(errors,[]);
+ // Persistência real do navegador: recria o jogo, sem reutilizar estado em memória.
+ await page.reload({waitUntil:'load'});
+ await page.waitForFunction(()=>window.__asfaltoBooted===true,{timeout:30000});
+ await page.locator('#campaign-mode').click();
+ const restored=await page.evaluate(()=>({
+  completed:window.asfaltoGame.campaign.completed.length,
+  wallet:window.asfaltoGame.garage.money
+ }));
+ assert.equal(restored.completed,9,'campaign progress must survive a full page reload');
+ assert.equal(restored.wallet,result.wallet,'earned credits must survive the same reload');
+ assert.equal(await page.locator('#campaign-count').textContent(),'9/9');
+ assert.equal(await page.locator('[data-mission="pacto-das-serras"]').isDisabled(),false);
+ console.log('PERSISTÊNCIA RELOAD: nove missões e créditos preservados',JSON.stringify(restored));
  await page.screenshot({path:path.join(root,'tests/chapter2-render.png')});
  console.log('SUCESSO: 3 novas missoes, encomenda 3D, perseguição, desvios e salvamento no Chromium');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

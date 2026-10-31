@@ -1,4 +1,10 @@
-# ASFALTO BRUTAL v2.1.0 — Capítulo II com entregas e caminhos obrigatórios
+# ASFALTO BRUTAL v2.1.1 — Correção de colisões nos ramais e QA de campanha
+
+**Correção 2.1.1:** contatos entre a moto do jogador e outros veículos usam o centro e a orientação da estrada realmente ocupada (inclusive os ramais), evitando deslocamentos indevidos para a pista principal.
+
+**Provas automatizadas:** 9 trajetos físicos de 3.800 m sem teleporte em Node (3 mapas × 3 ramais, 27 postos validados, 0 impactos nas barreiras); coleta e entrega da missão 7 por direção contínua; teste Chromium de impactos nos 3 ramais da costa, e recarga do navegador preservando 9/9 missões e a carteira após estados controlados.
+
+**Ainda não certificado:** nove corridas humanas completas, missões com oponentes/polícia em execução natural, missões 10–18 e rede urbana interconectada.
 
 **Nova campanha: 9 missões e 9 ramais dirigíveis** (3 por cenário), sem remover as 6 missões originais, rivais, garagem, armas e controle.
 
