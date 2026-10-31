@@ -1,7 +1,7 @@
 name: Asfalto Brutal motorcycle WebGL integration
 on:
   push:
-    branches: [main, feat/campaign-chapter2-deliveries-v210, qa/branch-impact-20261031]
+    branches: [main, feat/campaign-chapter2-deliveries-v210]
   workflow_dispatch:
 jobs:
   webgl:

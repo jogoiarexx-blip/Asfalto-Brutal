@@ -1,3 +1,12 @@
+## 2.1.1 — 31/10/2026 — Colisão no ramal e certificação incremental
+
+- Corrigido bug reproduzido em Chromium: o choque da moto no ramal aplicava o limite da pista principal, projetando o veículo para fora da estrada alternativa.
+- Deslocamento após contato (Enseada, Mirante, Cais): de 8,28/13,28/11,28 m para cerca de 0,85 m em cada ramal, todos abaixo do limite de 7,72 m.
+- Teste de regressão WebGL para colisão nos 3 ramais da costa.
+- Nove trajetos completos de 3.800 m (3 rotas × 3 ramais) dirigidos por simulação contínua em Node, sem teleporte, validando 27 checkpoints e zero impactos em barreiras.
+- Entrega da missão 7 por direção contínua sem saltos; teste Chromium de recarga confirma 9 missões e créditos preservados após estado controlado.
+- **Limites:** testes automatizados não equivalem a nove corridas humanas; não foram implementadas missões adicionais nem a malha urbana planejada.
+
 ## 2.1.0 — 30/10/2026 — Capítulo II: coleta, entrega e fuga por desvios
 
 - Campanha evolui de 6 para 9 missões, preservando salvamento anterior.

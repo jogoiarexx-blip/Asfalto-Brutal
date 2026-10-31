@@ -1,6 +1,6 @@
 {
   "name": "asfalto-brutal",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "private": true,
   "description": "Jogo Three.js de corrida e combate de motocicletas com polícia, garagem e armas corpo a corpo.",
