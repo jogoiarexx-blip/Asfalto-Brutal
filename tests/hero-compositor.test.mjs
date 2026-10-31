@@ -42,5 +42,6 @@ assert.match(code,/this\.scene\.add\(this\.heroShadowAnchor\)/,'ground shadow mu
 assert.match(code,/this\.renderer\.render\(this\.scene,this\.camera\)/,'single scene render path');
 assert.match(code,/this\.heroShadowAnchor\.position\.copy\(this\.playerBike\.group\.position\)/,'shadow tracks bike');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.match(html,/V 2\.1\.0/);
+const expectedVersion=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
+assert.ok(html.includes('V '+expectedVersion),'the displayed build version must match package.json');
 console.log('Render 3D de jogador e rivais em uma única cena: OK.');
