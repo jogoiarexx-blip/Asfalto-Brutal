@@ -1,7 +1,7 @@
 name: Asfalto Brutal motorcycle WebGL integration
 on:
   push:
-    branches: [main, feat/campaign-chapter2-deliveries-v210]
+    branches: [main, feat/campaign-chapter2-deliveries-v210, qa/branch-impact-20261031]
   workflow_dispatch:
 jobs:
   webgl:
@@ -26,6 +26,7 @@ jobs:
           node tests/road-forks-browser.test.mjs
           node tests/npc-forks-browser.test.mjs
           node tests/chapter2-browser.test.mjs
+          node tests/branch-impact-browser.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
